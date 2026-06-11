@@ -1,0 +1,21 @@
+@import "tailwindcss";
+
+@theme {
+  --font-family-base: 'Nunito', sans-serif;
+  
+  --color-primary: #1D4ED8;
+  --color-secondary: #10B981;
+  --color-alert-red: #DC2626;
+  --color-alert-amber: #F59E0B;
+  --color-neutral-bg: #F8FAFC;
+  --color-border: #E5E7EB;
+  --color-text-primary: #111827;
+}
+
+* {
+  font-family: 'Nunito', sans-serif;
+}
+
+h1, h2, h3, h4, h5, h6 {
+  font-weight: 700;
+}
