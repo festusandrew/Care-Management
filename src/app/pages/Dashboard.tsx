@@ -1,45 +1,29 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Sidebar } from '../components/Sidebar';
 import { TopBar } from '../components/TopBar';
 import { AlertDetailModal } from '../components/AlertDetailModal';
 import { ReportsModal } from '../components/ReportsModal';
 import CareManagementPlatform from '../imports/CareManagementPlatform';
+import { api } from '../services/api';
+import { Alert } from '../mockData/mockStore';
 
 export default function Dashboard() {
   const [showAlertModal, setShowAlertModal] = useState(false);
   const [showReportsModal, setShowReportsModal] = useState(false);
-  const [selectedAlert, setSelectedAlert] = useState<any>(null);
+  const [selectedAlert, setSelectedAlert] = useState<Alert | null>(null);
+  const [alerts, setAlerts] = useState<Alert[]>([]);
+  const [loading, setLoading] = useState(true);
 
-  const alerts = [
-    {
-      type: 'medication',
-      title: 'Missed Medication',
-      description: '3 missed MAR entries',
-      severity: 'critical' as const,
-      icon: 'medication' as const
-    },
-    {
-      type: 'review',
-      title: 'Care Plan Reviews',
-      description: '2 care plans overdue',
-      severity: 'warning' as const,
-      icon: 'review' as const
-    },
-    {
-      type: 'incident',
-      title: 'Unresolved Incidents',
-      description: '2 incidents pending review',
-      severity: 'warning' as const,
-      icon: 'incident' as const
-    },
-    {
-      type: 'compliance',
-      title: 'Compliance Updates',
-      description: '5 items require attention',
-      severity: 'info' as const,
-      icon: 'compliance' as const
-    }
-  ];
+  useEffect(() => {
+    let active = true;
+    api.getDashboardAlerts().then(data => {
+      if (active) {
+        setAlerts(data);
+        setLoading(false);
+      }
+    });
+    return () => { active = false; };
+  }, []);
 
   const handleViewDetails = (alertIndex: number) => {
     setSelectedAlert(alerts[alertIndex]);

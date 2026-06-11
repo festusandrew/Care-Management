@@ -26,7 +26,9 @@ import {
   FileText,
   Eye
 } from 'lucide-react';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { api } from '../services/api';
+import { ServiceUser } from '../mockData/mockStore';
 
 export default function ServiceUsers() {
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
@@ -37,6 +39,19 @@ export default function ServiceUsers() {
   const [openDropdown, setOpenDropdown] = useState<number | null>(null);
   const [showProfile, setShowProfile] = useState(false);
   const [profileUserId, setProfileUserId] = useState<number | null>(null);
+  const [serviceUsers, setServiceUsers] = useState<ServiceUser[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    let active = true;
+    api.getServiceUsers().then(data => {
+      if (active) {
+        setServiceUsers(data);
+        setLoading(false);
+      }
+    });
+    return () => { active = false; };
+  }, []);
 
   if (showProfile && profileUserId) {
     return (
@@ -49,105 +64,17 @@ export default function ServiceUsers() {
       />
     );
   }
-  
-  const serviceUsers = [
-    {
-      id: 1,
-      name: 'Sarah Johnson',
-      age: 14,
-      photo: '👧',
-      status: 'active',
-      riskLevel: 'amber',
-      mood: '😊',
-      location: 'Riverside House',
-      careManager: 'Dr. Emily Carter',
-      lastIncident: '3 days ago',
-      upcomingReview: '5 days',
-      conditions: ['Autism', 'Anxiety'],
-      phone: '07700 900123',
-    },
-    {
-      id: 2,
-      name: 'Michael Thompson',
-      age: 16,
-      photo: '👦',
-      status: 'active',
-      riskLevel: 'red',
-      mood: '😰',
-      location: 'Oak Tree Lodge',
-      careManager: 'Sarah Williams',
-      lastIncident: '12 hours ago',
-      upcomingReview: '2 weeks',
-      conditions: ['ADHD', 'Behavioral'],
-      phone: '07700 900456',
-    },
-    {
-      id: 3,
-      name: 'Emma Roberts',
-      age: 12,
-      photo: '👧',
-      status: 'active',
-      riskLevel: 'green',
-      mood: '😌',
-      location: 'Riverside House',
-      careManager: 'Dr. Emily Carter',
-      lastIncident: '2 weeks ago',
-      upcomingReview: '1 month',
-      conditions: ['None'],
-      phone: '07700 900789',
-    },
-    {
-      id: 4,
-      name: 'Oliver Parker',
-      age: 15,
-      photo: '👦',
-      status: 'active',
-      riskLevel: 'amber',
-      mood: '😐',
-      location: 'Meadow View',
-      careManager: 'James Mitchell',
-      lastIncident: '1 week ago',
-      upcomingReview: '10 days',
-      conditions: ['Depression'],
-      phone: '07700 900321',
-    },
-    {
-      id: 5,
-      name: 'Sophie Martinez',
-      age: 13,
-      photo: '👧',
-      status: 'active',
-      riskLevel: 'green',
-      mood: '😊',
-      location: 'Oak Tree Lodge',
-      careManager: 'Sarah Williams',
-      lastIncident: '1 month ago',
-      upcomingReview: '3 weeks',
-      conditions: ['None'],
-      phone: '07700 900654',
-    },
-    {
-      id: 6,
-      name: 'Lucas Chen',
-      age: 14,
-      photo: '👦',
-      status: 'active',
-      riskLevel: 'red',
-      mood: '😢',
-      location: 'Meadow View',
-      careManager: 'James Mitchell',
-      lastIncident: '6 hours ago',
-      upcomingReview: '1 week',
-      conditions: ['PTSD', 'Anxiety'],
-      phone: '07700 900987',
-    },
-  ];
+
+  const activeCount = serviceUsers.length;
+  const highRiskCount = serviceUsers.filter(u => u.riskLevel === 'red').length;
+  const mediumRiskCount = serviceUsers.filter(u => u.riskLevel === 'amber').length;
+  const reviewsDue = 8;
 
   const stats = [
-    { label: 'Total Service Users', value: '24', trend: '+2 this month' },
-    { label: 'High Risk', value: '6', color: 'text-red-600' },
-    { label: 'Medium Risk', value: '10', color: 'text-amber-600' },
-    { label: 'Reviews Due', value: '8', color: 'text-blue-600' },
+    { label: 'Total Service Users', value: activeCount.toString(), trend: '+2 this month' },
+    { label: 'High Risk', value: highRiskCount.toString(), color: 'text-red-600' },
+    { label: 'Medium Risk', value: mediumRiskCount.toString(), color: 'text-amber-600' },
+    { label: 'Reviews Due', value: reviewsDue.toString(), color: 'text-blue-600' },
   ];
 
   return (
@@ -548,6 +475,7 @@ export default function ServiceUsers() {
       <AddServiceUserModal 
         isOpen={showAddModal}
         onClose={() => setShowAddModal(false)}
+        onSuccess={(newUser) => setServiceUsers(prev => [...prev, newUser])}
       />
       
       {selectedUser && (

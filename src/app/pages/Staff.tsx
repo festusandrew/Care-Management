@@ -14,51 +14,14 @@ import {
   History, Calendar
 } from 'lucide-react';
 
-type ClockEvent = {
-  staffId: number; name: string; employeeId: string; avatarUrl: string;
-  clockIn: string | null; clockOut: string | null;
-  scheduledIn: string; scheduledOut: string; location: string; role: string;
-};
-
-type LeaveStatus = 'pending' | 'approved' | 'declined';
-type LeaveRequest = {
-  id: number; staffId: number; name: string; employeeId: string; avatarUrl: string; role: string;
-  type: string; from: string; to: string; days: number;
-  reason: string; submittedOn: string; status: LeaveStatus; adminNote: string;
-};
-
-const INITIAL_LEAVE_REQUESTS: LeaveRequest[] = [
-  { id: 1, staffId: 1, name: 'Mary Thompson',  employeeId: 'EMP-0001', avatarUrl: 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=800&auto=format&fit=crop&q=60', role: 'Support Worker',        type: 'Annual Leave',    from: '23 Jun 2026', to: '27 Jun 2026', days: 5, reason: 'Family holiday booked in advance.',          submittedOn: '8 Jun 2026',  status: 'pending',  adminNote: '' },
-  { id: 2, staffId: 4, name: 'James Mitchell',  employeeId: 'EMP-0004', avatarUrl: 'https://images.unsplash.com/photo-1519085360753-af0119f7cbe7?w=800&auto=format&fit=crop&q=60', role: 'Care Manager',          type: 'Medical Leave',   from: '15 Jun 2026', to: '16 Jun 2026', days: 2, reason: 'GP appointment and recovery.',               submittedOn: '9 Jun 2026',  status: 'pending',  adminNote: '' },
-  { id: 3, staffId: 2, name: 'John Davies',     employeeId: 'EMP-0002', avatarUrl: 'https://images.unsplash.com/photo-1531427186611-ecfd6d936c79?w=800&auto=format&fit=crop&q=60', role: 'Senior Support Worker', type: 'Annual Leave',    from: '30 Jun 2026', to: '4 Jul 2026',  days: 5, reason: 'Pre-booked holiday abroad.',                submittedOn: '5 Jun 2026',  status: 'approved', adminNote: 'Cover arranged with agency.' },
-  { id: 4, staffId: 7, name: 'Lisa Anderson',   employeeId: 'EMP-0007', avatarUrl: 'https://images.unsplash.com/photo-1594824419266-9b16414777a8?w=800&auto=format&fit=crop&q=60', role: 'Nurse',                 type: 'Emergency Leave', from: '11 Jun 2026', to: '11 Jun 2026', days: 1, reason: 'Family emergency — urgent travel required.', submittedOn: '10 Jun 2026', status: 'approved', adminNote: '' },
-  { id: 5, staffId: 3, name: 'Sarah Williams',  employeeId: 'EMP-0003', avatarUrl: 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=800&auto=format&fit=crop&q=60', role: 'Support Worker',        type: 'Annual Leave',    from: '14 Jun 2026', to: '14 Jun 2026', days: 1, reason: 'Personal appointment.',                     submittedOn: '7 Jun 2026',  status: 'declined', adminNote: 'Insufficient cover on that date.' },
-];
-
-const INITIAL_CLOCK_EVENTS: ClockEvent[] = [
-  { staffId: 1, name: 'Mary Thompson',  employeeId: 'EMP-0001', avatarUrl: 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=800&auto=format&fit=crop&q=60', clockIn: '07:02', clockOut: null,    scheduledIn: '07:00', scheduledOut: '15:00', location: 'Main House',     role: 'Support Worker' },
-  { staffId: 2, name: 'John Davies',    employeeId: 'EMP-0002', avatarUrl: 'https://images.unsplash.com/photo-1531427186611-ecfd6d936c79?w=800&auto=format&fit=crop&q=60', clockIn: '06:58', clockOut: '15:01', scheduledIn: '07:00', scheduledOut: '15:00', location: 'Annex Building', role: 'Senior Support Worker' },
-  { staffId: 7, name: 'Lisa Anderson',  employeeId: 'EMP-0007', avatarUrl: 'https://images.unsplash.com/photo-1594824419266-9b16414777a8?w=800&auto=format&fit=crop&q=60', clockIn: '07:59', clockOut: '16:03', scheduledIn: '08:00', scheduledOut: '16:00', location: 'Main House',     role: 'Nurse' },
-  { staffId: 4, name: 'James Mitchell', employeeId: 'EMP-0004', avatarUrl: 'https://images.unsplash.com/photo-1519085360753-af0119f7cbe7?w=800&auto=format&fit=crop&q=60', clockIn: '09:14', clockOut: null,    scheduledIn: '09:00', scheduledOut: '17:00', location: 'Office',         role: 'Care Manager' },
-  { staffId: 3, name: 'Sarah Williams', employeeId: 'EMP-0003', avatarUrl: 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=800&auto=format&fit=crop&q=60', clockIn: null,    clockOut: null,    scheduledIn: '15:00', scheduledOut: '23:00', location: 'Main House',     role: 'Support Worker' },
-];
-
-type HistoryRecord = ClockEvent & { date: string; hoursWorked: number | null; };
-
-const ATTENDANCE_HISTORY: HistoryRecord[] = [
-  { date: '2026-06-09', staffId: 1, name: 'Mary Thompson',  employeeId: 'EMP-0001', avatarUrl: 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=800&auto=format&fit=crop&q=60', clockIn: '07:01', clockOut: '15:03', scheduledIn: '07:00', scheduledOut: '15:00', location: 'Main House',     role: 'Support Worker',        hoursWorked: 8.0 },
-  { date: '2026-06-09', staffId: 2, name: 'John Davies',    employeeId: 'EMP-0002', avatarUrl: 'https://images.unsplash.com/photo-1531427186611-ecfd6d936c79?w=800&auto=format&fit=crop&q=60', clockIn: '07:12', clockOut: '15:00', scheduledIn: '07:00', scheduledOut: '15:00', location: 'Annex Building', role: 'Senior Support Worker',  hoursWorked: 7.8 },
-  { date: '2026-06-09', staffId: 7, name: 'Lisa Anderson',  employeeId: 'EMP-0007', avatarUrl: 'https://images.unsplash.com/photo-1594824419266-9b16414777a8?w=800&auto=format&fit=crop&q=60', clockIn: '08:00', clockOut: '16:05', scheduledIn: '08:00', scheduledOut: '16:00', location: 'Main House',     role: 'Nurse',                 hoursWorked: 8.1 },
-  { date: '2026-06-09', staffId: 4, name: 'James Mitchell', employeeId: 'EMP-0004', avatarUrl: 'https://images.unsplash.com/photo-1519085360753-af0119f7cbe7?w=800&auto=format&fit=crop&q=60', clockIn: '09:20', clockOut: '17:01', scheduledIn: '09:00', scheduledOut: '17:00', location: 'Office',         role: 'Care Manager',          hoursWorked: 7.7 },
-  { date: '2026-06-09', staffId: 3, name: 'Sarah Williams', employeeId: 'EMP-0003', avatarUrl: 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=800&auto=format&fit=crop&q=60', clockIn: '14:58', clockOut: '23:02', scheduledIn: '15:00', scheduledOut: '23:00', location: 'Main House',     role: 'Support Worker',        hoursWorked: 8.1 },
-  { date: '2026-06-08', staffId: 1, name: 'Mary Thompson',  employeeId: 'EMP-0001', avatarUrl: 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=800&auto=format&fit=crop&q=60', clockIn: '07:05', clockOut: '15:00', scheduledIn: '07:00', scheduledOut: '15:00', location: 'Main House',     role: 'Support Worker',        hoursWorked: 7.9 },
-  { date: '2026-06-08', staffId: 2, name: 'John Davies',    employeeId: 'EMP-0002', avatarUrl: 'https://images.unsplash.com/photo-1531427186611-ecfd6d936c79?w=800&auto=format&fit=crop&q=60', clockIn: '06:55', clockOut: '15:10', scheduledIn: '07:00', scheduledOut: '15:00', location: 'Annex Building', role: 'Senior Support Worker',  hoursWorked: 8.3 },
-  { date: '2026-06-08', staffId: 7, name: 'Lisa Anderson',  employeeId: 'EMP-0007', avatarUrl: 'https://images.unsplash.com/photo-1594824419266-9b16414777a8?w=800&auto=format&fit=crop&q=60', clockIn: '08:02', clockOut: '16:00', scheduledIn: '08:00', scheduledOut: '16:00', location: 'Main House',     role: 'Nurse',                 hoursWorked: 8.0 },
-  { date: '2026-06-07', staffId: 1, name: 'Mary Thompson',  employeeId: 'EMP-0001', avatarUrl: 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=800&auto=format&fit=crop&q=60', clockIn: '07:00', clockOut: '15:00', scheduledIn: '07:00', scheduledOut: '15:00', location: 'Main House',     role: 'Support Worker',        hoursWorked: 8.0 },
-  { date: '2026-06-07', staffId: 4, name: 'James Mitchell', employeeId: 'EMP-0004', avatarUrl: 'https://images.unsplash.com/photo-1519085360753-af0119f7cbe7?w=800&auto=format&fit=crop&q=60', clockIn: '09:45', clockOut: '17:00', scheduledIn: '09:00', scheduledOut: '17:00', location: 'Office',         role: 'Care Manager',          hoursWorked: 7.3 },
-  { date: '2026-06-06', staffId: 3, name: 'Sarah Williams', employeeId: 'EMP-0003', avatarUrl: 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=800&auto=format&fit=crop&q=60', clockIn: '15:02', clockOut: '23:00', scheduledIn: '15:00', scheduledOut: '23:00', location: 'Main House',     role: 'Support Worker',        hoursWorked: 8.0 },
-  { date: '2026-06-06', staffId: 2, name: 'John Davies',    employeeId: 'EMP-0002', avatarUrl: 'https://images.unsplash.com/photo-1531427186611-ecfd6d936c79?w=800&auto=format&fit=crop&q=60', clockIn: '07:00', clockOut: '15:01', scheduledIn: '07:00', scheduledOut: '15:00', location: 'Annex Building', role: 'Senior Support Worker',  hoursWorked: 8.0 },
-];
+import { 
+  ClockEvent, 
+  LeaveStatus, 
+  LeaveRequest, 
+  HistoryRecord, 
+  StaffMember 
+} from '../mockData/mockStore';
+import { api } from '../services/api';
 
 function varianceLabel(scheduled: string, actual: string | null, type: 'in' | 'out') {
   if (!actual) return null;
@@ -81,13 +44,10 @@ export default function Staff() {
   const [activeTab, setActiveTab] = useState<'directory' | 'attendance' | 'leave'>('directory');
   const [openDropdown, setOpenDropdown] = useState<number | null>(null);
   const [showAddModal, setShowAddModal] = useState(false);
-  const [clockEvents, setClockEvents] = useState<ClockEvent[]>(INITIAL_CLOCK_EVENTS);
   const [attendanceView, setAttendanceView] = useState<'live' | 'history'>('live');
   const [historyDateFrom, setHistoryDateFrom] = useState('2026-06-06');
   const [historyDateTo, setHistoryDateTo]     = useState('2026-06-09');
   const [historyStaffFilter, setHistoryStaffFilter] = useState('');
-  const [leaveRequests, setLeaveRequests] = useState<LeaveRequest[]>(INITIAL_LEAVE_REQUESTS);
-  const [leaveFilter, setLeaveFilter] = useState<LeaveStatus | 'all'>('all');
   const [declineTarget, setDeclineTarget] = useState<LeaveRequest | null>(null);
   const [declineNote, setDeclineNote] = useState('');
   const [detailRequest, setDetailRequest] = useState<LeaveRequest | null>(null);
@@ -99,30 +59,69 @@ export default function Staff() {
   const toastTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const { setCurrentPage } = useNavigation();
 
-  const adminClockOut = (staffId: number) => {
-    const now = new Date().toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
-    setClockEvents(evs => evs.map(e => e.staffId === staffId ? { ...e, clockOut: now } : e));
-    const name = clockEvents.find(e => e.staffId === staffId)?.name ?? '';
-    setToastName(name);
-    if (toastTimer.current) clearTimeout(toastTimer.current);
-    toastTimer.current = setTimeout(() => setToastName(null), 3000);
-    setConfirmClockOut(null);
-    setClockOutNote('');
+  // Async API State
+  const [staffMembers, setStaffMembers] = useState<StaffMember[]>([]);
+  const [clockEvents, setClockEvents] = useState<ClockEvent[]>([]);
+  const [leaveRequests, setLeaveRequests] = useState<LeaveRequest[]>([]);
+  const [attendanceHistory, setAttendanceHistory] = useState<HistoryRecord[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    let active = true;
+    Promise.all([
+      api.getStaffMembers(),
+      api.getClockEvents(),
+      api.getLeaveRequests(),
+      api.getAttendanceHistory()
+    ]).then(([staffData, clockData, leaveData, historyData]) => {
+      if (active) {
+        setStaffMembers(staffData);
+        setClockEvents(clockData);
+        setLeaveRequests(leaveData);
+        setAttendanceHistory(historyData);
+        setLoading(false);
+      }
+    });
+    return () => { active = false; };
+  }, []);
+
+  const adminClockOut = async (staffId: number) => {
+    try {
+      const updated = await api.clockOutStaff(staffId, clockOutNote);
+      setClockEvents(evs => evs.map(e => e.staffId === staffId ? updated : e));
+      setToastName(updated.name);
+      if (toastTimer.current) clearTimeout(toastTimer.current);
+      toastTimer.current = setTimeout(() => setToastName(null), 3000);
+      setConfirmClockOut(null);
+      setClockOutNote('');
+    } catch (err) {
+      console.error(err);
+    }
   };
 
-  const approveLeave = (id: number) => {
-    setLeaveRequests(rs => rs.map(r => r.id === id ? { ...r, status: 'approved' } : r));
-    setDetailRequest(r => r?.id === id ? { ...r, status: 'approved' } : r);
+  const approveLeave = async (id: number) => {
+    try {
+      const updated = await api.updateLeaveRequestStatus(id, 'approved');
+      setLeaveRequests(rs => rs.map(r => r.id === id ? updated : r));
+      setDetailRequest(r => r?.id === id ? updated : r);
+    } catch (err) {
+      console.error(err);
+    }
   };
 
-  const declineLeave = (id: number, note: string) => {
-    setLeaveRequests(rs => rs.map(r => r.id === id ? { ...r, status: 'declined', adminNote: note } : r));
-    setDetailRequest(r => r?.id === id ? { ...r, status: 'declined', adminNote: note } : r);
-    setDeclineTarget(null);
-    setDeclineNote('');
+  const declineLeave = async (id: number, note: string) => {
+    try {
+      const updated = await api.updateLeaveRequestStatus(id, 'declined', note);
+      setLeaveRequests(rs => rs.map(r => r.id === id ? updated : r));
+      setDetailRequest(r => r?.id === id ? updated : r);
+      setDeclineTarget(null);
+      setDeclineNote('');
+    } catch (err) {
+      console.error(err);
+    }
   };
 
-  const submitLogLeave = () => {
+  const submitLogLeave = async () => {
     if (!logLeaveForm.staffId || !logLeaveForm.from || !logLeaveForm.to) return;
     const member = staffMembers.find(s => s.id === Number(logLeaveForm.staffId));
     if (!member) return;
@@ -130,8 +129,8 @@ export default function Staff() {
     const to   = new Date(logLeaveForm.to);
     const days = Math.max(1, Math.round((to.getTime() - from.getTime()) / 86400000) + 1);
     const fmt  = (d: Date) => d.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
-    setLeaveRequests(rs => [{
-      id: Date.now(),
+    
+    const newRequest = {
       staffId: member.id,
       name: member.name,
       employeeId: member.employeeId,
@@ -142,18 +141,23 @@ export default function Staff() {
       to: fmt(to),
       days,
       reason: logLeaveForm.reason || 'Logged by admin.',
-      submittedOn: new Date().toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }),
       status: logLeaveForm.status,
       adminNote: 'Logged manually by admin.',
-    }, ...rs]);
-    setShowLogLeave(false);
-    setLogLeaveForm({ staffId: '', type: 'Annual Leave', from: '', to: '', reason: '', status: 'approved' });
+    };
+
+    try {
+      const created = await api.logLeaveRequest(newRequest);
+      setLeaveRequests(rs => [created, ...rs]);
+      setShowLogLeave(false);
+      setLogLeaveForm({ staffId: '', type: 'Annual Leave', from: '', to: '', reason: '', status: 'approved' });
+    } catch (err) {
+      console.error(err);
+    }
   };
 
   const pendingCount = leaveRequests.filter(r => r.status === 'pending').length;
 
-  // Attendance history derived values (computed here, not inside JSX)
-  const filteredHistory = ATTENDANCE_HISTORY.filter(r => {
+  const filteredHistory = attendanceHistory.filter(r => {
     const inRange = (!historyDateFrom || r.date >= historyDateFrom) && (!historyDateTo || r.date <= historyDateTo);
     const matchStaff = !historyStaffFilter || r.staffId === Number(historyStaffFilter);
     return inRange && matchStaff;
@@ -161,78 +165,9 @@ export default function Staff() {
   const uniqueDates = [...new Set(filteredHistory.map(r => r.date))].sort((a, b) => b.localeCompare(a));
   const totalHistoryHours = filteredHistory.reduce((s, r) => s + (r.hoursWorked ?? 0), 0);
 
-  // Mock staff data
-  const staffMembers = [
-    {
-      id: 1,
-      employeeId: 'EMP-0001',
-      name: 'Mary Thompson',
-      role: 'Support Worker',
-      status: 'Active',
-      email: 'm.thompson@mpoweredcare.com',
-      phone: '+44 7700 900123',
-      location: 'Main House',
-      avatarUrl: 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=800&auto=format&fit=crop&q=60',
-      nextShift: '7 Dec, 07:00 - 15:00',
-      qualifications: ['Care Certificate', 'First Aid'],
-    },
-    {
-      id: 2,
-      employeeId: 'EMP-0002',
-      name: 'John Davies',
-      role: 'Senior Support Worker',
-      status: 'Active',
-      email: 'j.davies@mpoweredcare.com',
-      phone: '+44 7700 900234',
-      location: 'Annex Building',
-      avatarUrl: 'https://images.unsplash.com/photo-1531427186611-ecfd6d936c79?w=800&auto=format&fit=crop&q=60',
-      nextShift: '7 Dec, 07:00 - 15:00',
-      qualifications: ['NVQ Level 3', 'Medication Admin'],
-    },
-    {
-      id: 3,
-      employeeId: 'EMP-0003',
-      name: 'Sarah Williams',
-      role: 'Support Worker',
-      status: 'On Leave',
-      email: 's.williams@mpoweredcare.com',
-      phone: '+44 7700 900345',
-      location: 'Main House',
-      avatarUrl: 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=800&auto=format&fit=crop&q=60',
-      nextShift: '15 Dec, 15:00 - 23:00',
-      qualifications: ['Care Certificate'],
-    },
-    {
-      id: 4,
-      employeeId: 'EMP-0004',
-      name: 'James Mitchell',
-      role: 'Care Manager',
-      status: 'Active',
-      email: 'j.mitchell@mpoweredcare.com',
-      phone: '+44 7700 900456',
-      location: 'Office',
-      avatarUrl: 'https://images.unsplash.com/photo-1519085360753-af0119f7cbe7?w=800&auto=format&fit=crop&q=60',
-      nextShift: '7 Dec, 09:00 - 17:00',
-      qualifications: ['Level 5 Diploma', 'Safeguarding Lead'],
-    },
-    {
-      id: 7,
-      employeeId: 'EMP-0007',
-      name: 'Lisa Anderson',
-      role: 'Nurse',
-      status: 'Active',
-      email: 'l.anderson@mpoweredcare.com',
-      phone: '+44 7700 900789',
-      location: 'Main House',
-      avatarUrl: 'https://images.unsplash.com/photo-1594824419266-9b16414777a8?w=800&auto=format&fit=crop&q=60',
-      nextShift: '7 Dec, 08:00 - 16:00',
-      qualifications: ['NMC Registered', 'Advanced First Aid'],
-    }
-  ];
-
   const stats = [
-    { label: 'Total Staff', value: '48', trend: '+1 this month' },
-    { label: 'On Leave', value: '3', color: 'text-gray-600' },
+    { label: 'Total Staff', value: staffMembers.length.toString(), trend: '+1 this month' },
+    { label: 'On Leave', value: staffMembers.filter(s => s.status === 'On Leave').length.toString(), color: 'text-gray-600' },
     { label: 'Pending Timesheets', value: '5', color: 'text-amber-600' },
     { label: 'Compliance Due', value: '2', color: 'text-red-600' },
   ];
@@ -364,7 +299,7 @@ export default function Staff() {
                   <select value={historyStaffFilter} onChange={e => setHistoryStaffFilter(e.target.value)}
                     className="px-3 py-1.5 border border-gray-200 rounded-lg text-sm outline-none focus:border-blue-400 bg-white text-gray-700">
                     <option value="">All Staff</option>
-                    {INITIAL_CLOCK_EVENTS.map(s => <option key={s.staffId} value={s.staffId}>{s.name}</option>)}
+                    {clockEvents.map(s => <option key={s.staffId} value={s.staffId}>{s.name}</option>)}
                   </select>
                   <span className="text-xs text-blue-700 bg-blue-50 border border-blue-100 px-2.5 py-1 rounded-full">
                     {filteredHistory.length} records · {totalHistoryHours.toFixed(1)}h total
@@ -1093,6 +1028,7 @@ export default function Staff() {
       <AddStaffMemberModal
         isOpen={showAddModal}
         onClose={() => setShowAddModal(false)}
+        onSuccess={(newStaff) => setStaffMembers(prev => [...prev, newStaff])}
       />
 
       {/* ── Log Leave Modal ── */}

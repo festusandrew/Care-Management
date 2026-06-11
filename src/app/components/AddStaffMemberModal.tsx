@@ -1,9 +1,11 @@
 import { useState, useRef, useCallback } from 'react';
 import { X, User, Mail, Phone, MapPin, Briefcase, Clock, CalendarDays, CheckCircle2, Shield, Plus, Trash2, AlertCircle, ChevronRight, ChevronLeft, Camera, Upload } from 'lucide-react';
+import { api } from '../services/api';
 
 interface AddStaffMemberModalProps {
   isOpen: boolean;
   onClose: () => void;
+  onSuccess?: (newStaff: any) => void;
 }
 
 type Step = 'personal' | 'employment' | 'compliance';
@@ -18,7 +20,7 @@ const INPUT = "w-full px-3 py-2 bg-white border border-gray-200 rounded-lg text-
 const ICON_INPUT = "w-full pl-9 pr-3 py-2 bg-white border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-colors";
 const LABEL = "block text-sm font-medium text-gray-700 mb-1";
 
-export function AddStaffMemberModal({ isOpen, onClose }: AddStaffMemberModalProps) {
+export function AddStaffMemberModal({ isOpen, onClose, onSuccess }: AddStaffMemberModalProps) {
   const [step, setStep] = useState<Step>('personal');
 
   // Photo
@@ -89,6 +91,28 @@ export function AddStaffMemberModal({ isOpen, onClose }: AddStaffMemberModalProp
     setStep('personal');
     setPhotoUrl(null);
     onClose();
+  };
+
+  const handleCreate = async () => {
+    const newStaff = {
+      employeeId: `EMP-${Math.floor(1000 + Math.random() * 9000)}`,
+      name: `${firstName} ${lastName}`.trim() || 'Anonymous Staff',
+      role: role || 'Support Worker',
+      status: employeeStatus || 'Active',
+      email: email || 'staff@mpoweredcare.com',
+      phone: phone || '+44 7700 900000',
+      location: location || 'Main House',
+      avatarUrl: photoUrl || 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=800&auto=format&fit=crop&q=60',
+      nextShift: 'TBD',
+      qualifications: qualifications.map(q => q.name).filter(Boolean),
+    };
+    try {
+      const created = await api.addStaffMember(newStaff);
+      if (onSuccess) onSuccess(created);
+      handleClose();
+    } catch (err) {
+      console.error(err);
+    }
   };
 
   if (!isOpen) return null;
@@ -454,7 +478,7 @@ export function AddStaffMemberModal({ isOpen, onClose }: AddStaffMemberModalProp
               Cancel
             </button>
             {isLast ? (
-              <button onClick={handleClose} className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm font-medium">
+              <button onClick={handleCreate} className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm font-medium">
                 <CheckCircle2 size={16} />
                 Create Staff Profile
               </button>

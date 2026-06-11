@@ -1,9 +1,11 @@
 import { useState, useRef, useCallback } from 'react';
 import { X, User, Phone, Mail, MapPin, Heart, Stethoscope, Briefcase, Users, DollarSign, CheckCircle2, ChevronRight, ChevronLeft, Plus, Trash2, Shield, Home, UserCheck, Camera, Upload } from 'lucide-react';
+import { api } from '../services/api';
 
 interface AddServiceUserModalProps {
   isOpen: boolean;
   onClose: () => void;
+  onSuccess?: (newUser: any) => void;
 }
 
 type Step = 'personal' | 'contacts' | 'care' | 'medical' | 'visitors';
@@ -39,7 +41,7 @@ function Field({ label, className = '', children }: { label: string; className?:
   );
 }
 
-export function AddServiceUserModal({ isOpen, onClose }: AddServiceUserModalProps) {
+export function AddServiceUserModal({ isOpen, onClose, onSuccess }: AddServiceUserModalProps) {
   const [step, setStep] = useState<Step>('personal');
 
   /* ── Photo ── */
@@ -148,6 +150,30 @@ export function AddServiceUserModal({ isOpen, onClose }: AddServiceUserModalProp
     setStep('personal');
     setPhotoUrl(null);
     onClose();
+  };
+
+  const handleCreate = async () => {
+    const newUser = {
+      name: `${firstName} ${lastName}`.trim() || 'Anonymous User',
+      age: dob ? Math.floor((new Date().getTime() - new Date(dob).getTime()) / 31557600000) : 15,
+      photo: photoUrl || (gender === 'Female' ? '👧' : '👦'),
+      status: 'active',
+      riskLevel: (riskLevel as 'red' | 'amber' | 'green') || 'green',
+      mood: '😊',
+      location: location || 'Riverside House',
+      careManager: careManager || 'Dr. Emily Carter',
+      lastIncident: 'None',
+      upcomingReview: '1 month',
+      conditions: conditions ? conditions.split(',').map(s => s.trim()) : ['None'],
+      phone: phone || nokPhone || '07700 900000'
+    };
+    try {
+      const created = await api.addServiceUser(newUser);
+      if (onSuccess) onSuccess(created);
+      handleClose();
+    } catch (err) {
+      console.error(err);
+    }
   };
 
   if (!isOpen) return null;
@@ -593,7 +619,7 @@ export function AddServiceUserModal({ isOpen, onClose }: AddServiceUserModalProp
               Cancel
             </button>
             {isLast ? (
-              <button type="button" onClick={handleClose} className="flex items-center gap-2 px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition-colors text-sm">
+              <button type="button" onClick={handleCreate} className="flex items-center gap-2 px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition-colors text-sm">
                 <CheckCircle2 size={16} /> Create Profile
               </button>
             ) : (
