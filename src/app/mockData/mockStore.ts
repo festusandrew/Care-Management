@@ -72,6 +72,22 @@ export type Alert = {
   icon: 'medication' | 'review' | 'incident' | 'compliance';
 };
 
+export type MedicationRecord = {
+  id: number;
+  serviceUser: string;
+  userId: number;
+  userPhoto: string;
+  medication: string;
+  dosage: string;
+  time: string;
+  route: string;
+  status: string;
+  administeredBy: string;
+  administeredAt: string;
+  notes: string;
+  riskLevel: 'red' | 'amber' | 'green';
+};
+
 // --- In-Memory Database State ---
 
 let alerts: Alert[] = [
@@ -297,6 +313,159 @@ let attendanceHistory: HistoryRecord[] = [
   { date: '2026-06-06', staffId: 2, name: 'John Davies',    employeeId: 'EMP-0002', avatarUrl: 'https://images.unsplash.com/photo-1531427186611-ecfd6d936c79?w=800&auto=format&fit=crop&q=60', clockIn: '07:00', clockOut: '15:01', scheduledIn: '07:00', scheduledOut: '15:00', location: 'Annex Building', role: 'Senior Support Worker',  hoursWorked: 8.0 },
 ];
 
+let medications: MedicationRecord[] = [
+  {
+    id: 1,
+    serviceUser: 'Sarah Johnson',
+    userId: 1,
+    userPhoto: '👧',
+    medication: 'Sertraline',
+    dosage: '50mg',
+    time: '08:00',
+    route: 'Oral',
+    status: 'administered',
+    administeredBy: 'Mary Thompson',
+    administeredAt: '08:05',
+    notes: '',
+    riskLevel: 'amber',
+  },
+  {
+    id: 2,
+    serviceUser: 'Michael Thompson',
+    userId: 2,
+    userPhoto: '👦',
+    medication: 'Methylphenidate',
+    dosage: '20mg',
+    time: '08:00',
+    route: 'Oral',
+    status: 'due',
+    administeredBy: '',
+    administeredAt: '',
+    notes: '',
+    riskLevel: 'green',
+  },
+  {
+    id: 3,
+    serviceUser: 'Emma Roberts',
+    userId: 3,
+    userPhoto: '👧',
+    medication: 'Fluoxetine',
+    dosage: '20mg',
+    time: '08:00',
+    route: 'Oral',
+    status: 'administered',
+    administeredBy: 'John Davies',
+    administeredAt: '08:10',
+    notes: '',
+    riskLevel: 'green',
+  },
+  {
+    id: 4,
+    serviceUser: 'Oliver Parker',
+    userId: 4,
+    userPhoto: '👦',
+    medication: 'Risperidone',
+    dosage: '2mg',
+    time: '09:00',
+    route: 'Oral',
+    status: 'due',
+    administeredBy: '',
+    administeredAt: '',
+    notes: '',
+    riskLevel: 'red',
+  },
+  {
+    id: 5,
+    serviceUser: 'Sarah Johnson',
+    userId: 1,
+    userPhoto: '👧',
+    medication: 'Paracetamol (PRN)',
+    dosage: '500mg',
+    time: '10:30',
+    route: 'Oral',
+    status: 'refused',
+    administeredBy: 'Mary Thompson',
+    administeredAt: '10:30',
+    notes: 'Patient refused, said feeling better',
+    riskLevel: 'amber',
+  },
+  {
+    id: 6,
+    serviceUser: 'Michael Thompson',
+    userId: 2,
+    userPhoto: '👦',
+    medication: 'Melatonin',
+    dosage: '3mg',
+    time: '19:00',
+    route: 'Oral',
+    status: 'pending',
+    administeredBy: '',
+    administeredAt: '',
+    notes: '',
+    riskLevel: 'green',
+  },
+  {
+    id: 7,
+    serviceUser: 'Emma Roberts',
+    userId: 3,
+    userPhoto: '👧',
+    medication: 'Vitamin D',
+    dosage: '1000 IU',
+    time: '12:00',
+    route: 'Oral',
+    status: 'administered',
+    administeredBy: 'Sarah Williams',
+    administeredAt: '12:05',
+    notes: '',
+    riskLevel: 'green',
+  },
+  {
+    id: 8,
+    serviceUser: 'Oliver Parker',
+    userId: 4,
+    userPhoto: '👦',
+    medication: 'Lorazepam (PRN)',
+    dosage: '1mg',
+    time: '11:00',
+    route: 'Oral',
+    status: 'missed',
+    administeredBy: '',
+    administeredAt: '',
+    notes: 'Service user was off-site',
+    riskLevel: 'red',
+  },
+  {
+    id: 9,
+    serviceUser: 'Sarah Johnson',
+    userId: 1,
+    userPhoto: '👧',
+    medication: 'Sertraline',
+    dosage: '50mg',
+    time: '20:00',
+    route: 'Oral',
+    status: 'pending',
+    administeredBy: '',
+    administeredAt: '',
+    notes: '',
+    riskLevel: 'amber',
+  },
+  {
+    id: 10,
+    serviceUser: 'Michael Thompson',
+    userId: 2,
+    userPhoto: '👦',
+    medication: 'Methylphenidate',
+    dosage: '20mg',
+    time: '12:00',
+    route: 'Oral',
+    status: 'administered',
+    administeredBy: 'James Mitchell',
+    administeredAt: '12:03',
+    notes: '',
+    riskLevel: 'green',
+  },
+];
+
 // --- Database Helpers / Accessors ---
 
 export const mockStore = {
@@ -379,5 +548,75 @@ export const mockStore = {
     return newRequest;
   },
 
-  getAttendanceHistory: () => [...attendanceHistory]
+  getAttendanceHistory: () => [...attendanceHistory],
+
+  getMedications: () => [...medications],
+
+  addMedications: (newMeds: Omit<MedicationRecord, 'id' | 'status' | 'administeredBy' | 'administeredAt' | 'notes'>[]) => {
+    const added: MedicationRecord[] = [];
+    newMeds.forEach(med => {
+      const newId = medications.length > 0 ? Math.max(...medications.map(m => m.id)) + 1 : 1;
+      const newRecord: MedicationRecord = {
+        ...med,
+        id: newId,
+        status: 'due',
+        administeredBy: '',
+        administeredAt: '',
+        notes: ''
+      };
+      medications.push(newRecord);
+      added.push(newRecord);
+    });
+    return added;
+  },
+
+  administerMedication: (id: number, administeredBy: string, notes?: string) => {
+    const nowStr = new Date().toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
+    let updated: MedicationRecord | null = null;
+    medications = medications.map(m => {
+      if (m.id === id) {
+        updated = {
+          ...m,
+          status: 'administered',
+          administeredBy,
+          administeredAt: nowStr,
+          notes: notes || ''
+        };
+        return updated;
+      }
+      return m;
+    });
+    return updated;
+  },
+
+  updateMedicationStatus: (id: number, status: string, notes?: string) => {
+    let updated: MedicationRecord | null = null;
+    medications = medications.map(m => {
+      if (m.id === id) {
+        updated = {
+          ...m,
+          status,
+          notes: notes || ''
+        };
+        return updated;
+      }
+      return m;
+    });
+    return updated;
+  },
+
+  updateMedicationSchedule: (id: number, schedule: Partial<MedicationRecord>) => {
+    let updated: MedicationRecord | null = null;
+    medications = medications.map(m => {
+      if (m.id === id) {
+        updated = {
+          ...m,
+          ...schedule
+        };
+        return updated;
+      }
+      return m;
+    });
+    return updated;
+  }
 };

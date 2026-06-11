@@ -27,7 +27,9 @@ import {
   Activity,
   X
 } from 'lucide-react';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { api } from '../services/api';
+import { MedicationRecord, ServiceUser } from '../mockData/mockStore';
 
 export default function Medications() {
   const [searchQuery, setSearchQuery] = useState('');
@@ -45,166 +47,44 @@ export default function Medications() {
   const [filterTime, setFilterTime] = useState<string>('');
   const [openDropdown, setOpenDropdown] = useState<number | null>(null);
 
-  const medications = [
-    {
-      id: 1,
-      serviceUser: 'Sarah Johnson',
-      userId: 1,
-      userPhoto: '👧',
-      medication: 'Sertraline',
-      dosage: '50mg',
-      time: '08:00',
-      route: 'Oral',
-      status: 'administered',
-      administeredBy: 'Mary Thompson',
-      administeredAt: '08:05',
-      notes: '',
-      riskLevel: 'amber',
-    },
-    {
-      id: 2,
-      serviceUser: 'Michael Chen',
-      userId: 2,
-      userPhoto: '👦',
-      medication: 'Methylphenidate',
-      dosage: '20mg',
-      time: '08:00',
-      route: 'Oral',
-      status: 'due',
-      administeredBy: '',
-      administeredAt: '',
-      notes: '',
-      riskLevel: 'green',
-    },
-    {
-      id: 3,
-      serviceUser: 'Emma Wilson',
-      userId: 3,
-      userPhoto: '👧',
-      medication: 'Fluoxetine',
-      dosage: '20mg',
-      time: '08:00',
-      route: 'Oral',
-      status: 'administered',
-      administeredBy: 'John Davies',
-      administeredAt: '08:10',
-      notes: '',
-      riskLevel: 'green',
-    },
-    {
-      id: 4,
-      serviceUser: 'James Rodriguez',
-      userId: 4,
-      userPhoto: '👦',
-      medication: 'Risperidone',
-      dosage: '2mg',
-      time: '09:00',
-      route: 'Oral',
-      status: 'due',
-      administeredBy: '',
-      administeredAt: '',
-      notes: '',
-      riskLevel: 'red',
-    },
-    {
-      id: 5,
-      serviceUser: 'Sarah Johnson',
-      userId: 1,
-      userPhoto: '👧',
-      medication: 'Paracetamol (PRN)',
-      dosage: '500mg',
-      time: '10:30',
-      route: 'Oral',
-      status: 'refused',
-      administeredBy: 'Mary Thompson',
-      administeredAt: '10:30',
-      notes: 'Patient refused, said feeling better',
-      riskLevel: 'amber',
-    },
-    {
-      id: 6,
-      serviceUser: 'Michael Chen',
-      userId: 2,
-      userPhoto: '👦',
-      medication: 'Melatonin',
-      dosage: '3mg',
-      time: '19:00',
-      route: 'Oral',
-      status: 'pending',
-      administeredBy: '',
-      administeredAt: '',
-      notes: '',
-      riskLevel: 'green',
-    },
-    {
-      id: 7,
-      serviceUser: 'Emma Wilson',
-      userId: 3,
-      userPhoto: '👧',
-      medication: 'Vitamin D',
-      dosage: '1000 IU',
-      time: '12:00',
-      route: 'Oral',
-      status: 'administered',
-      administeredBy: 'Sarah Williams',
-      administeredAt: '12:05',
-      notes: '',
-      riskLevel: 'green',
-    },
-    {
-      id: 8,
-      serviceUser: 'James Rodriguez',
-      userId: 4,
-      userPhoto: '👦',
-      medication: 'Lorazepam (PRN)',
-      dosage: '1mg',
-      time: '11:00',
-      route: 'Oral',
-      status: 'missed',
-      administeredBy: '',
-      administeredAt: '',
-      notes: 'Service user was off-site',
-      riskLevel: 'red',
-    },
-    {
-      id: 9,
-      serviceUser: 'Sarah Johnson',
-      userId: 1,
-      userPhoto: '👧',
-      medication: 'Sertraline',
-      dosage: '50mg',
-      time: '20:00',
-      route: 'Oral',
-      status: 'pending',
-      administeredBy: '',
-      administeredAt: '',
-      notes: '',
-      riskLevel: 'amber',
-    },
-    {
-      id: 10,
-      serviceUser: 'Michael Chen',
-      userId: 2,
-      userPhoto: '👦',
-      medication: 'Methylphenidate',
-      dosage: '20mg',
-      time: '12:00',
-      route: 'Oral',
-      status: 'administered',
-      administeredBy: 'James Mitchell',
-      administeredAt: '12:03',
-      notes: '',
-      riskLevel: 'green',
-    },
-  ];
+  const [medications, setMedications] = useState<MedicationRecord[]>([]);
+  const [serviceUsersList, setServiceUsersList] = useState<ServiceUser[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    async function loadData() {
+      try {
+        const [meds, users] = await Promise.all([
+          api.getMedications(),
+          api.getServiceUsers()
+        ]);
+        setMedications(meds);
+        setServiceUsersList(users);
+      } catch (err) {
+        console.error('Failed to load medications data:', err);
+      } finally {
+        setLoading(false);
+      }
+    }
+    loadData();
+  }, []);
+
+  const totalDue = medications.filter(m => m.status === 'due' || m.status === 'pending').length;
+  const administered = medications.filter(m => m.status === 'administered').length;
+  const pending = medications.filter(m => m.status === 'pending').length;
+  const missed = medications.filter(m => m.status === 'missed').length;
+  const refused = medications.filter(m => m.status === 'refused').length;
+  const complianceRate = (administered + missed + refused) > 0 
+    ? Math.round((administered / (administered + missed + refused)) * 100) 
+    : 100;
 
   const stats = {
-    totalDue: 15,
-    administered: 8,
-    pending: 4,
-    missed: 2,
-    refused: 1,
-    complianceRate: 87,
+    totalDue,
+    administered,
+    pending,
+    missed,
+    refused,
+    complianceRate,
   };
 
   const filteredMedications = medications.filter(med => {
@@ -239,19 +119,92 @@ export default function Medications() {
     }
   };
 
-  const handleAdministerConfirm = (data: any) => {
-    console.log('Medication administered:', data);
-    // In a real app, this would update the medication record
+  const handleAdministerConfirm = async (data: any) => {
+    try {
+      let notes = data.notes || '';
+      if (data.bloodPressure || data.heartRate || data.temperature) {
+        const vitals = [];
+        if (data.bloodPressure) vitals.push(`BP: ${data.bloodPressure}`);
+        if (data.heartRate) vitals.push(`HR: ${data.heartRate}`);
+        if (data.temperature) vitals.push(`Temp: ${data.temperature}`);
+        notes += (notes ? '; ' : '') + `Vitals: ${vitals.join(', ')}`;
+      }
+      if (data.adverseReaction) {
+        notes += (notes ? '; ' : '') + `ADVERSE REACTION: ${data.reactionDetails}`;
+      }
+
+      await api.administerMedication(data.medicationId, 'Mary Thompson', notes);
+      const list = await api.getMedications();
+      setMedications(list);
+    } catch (err) {
+      console.error('Failed to administer medication:', err);
+    }
   };
 
-  const handleMarkConfirm = (data: any) => {
-    console.log('Medication marked:', data);
-    // In a real app, this would update the medication record
+  const handleMarkConfirm = async (data: any) => {
+    try {
+      let notes = `Reason: ${data.reason}; Action: ${data.actionTaken}`;
+      if (data.notifiedCareManager) notes += '; Notified Care Manager';
+      if (data.notifiedPhysician) notes += '; Notified Physician';
+      if (data.followUpRequired) notes += `; Follow-up plan: ${data.followUpNotes}`;
+
+      await api.updateMedicationStatus(data.medicationId, data.type, notes);
+      const list = await api.getMedications();
+      setMedications(list);
+    } catch (err) {
+      console.error('Failed to update medication status:', err);
+    }
   };
 
-  const handleEditScheduleSave = (data: any) => {
-    console.log('Schedule updated:', data);
-    // In a real app, this would update the medication schedule
+  const handleEditScheduleSave = async (data: any) => {
+    try {
+      const scheduleUpdates: Partial<MedicationRecord> = {
+        medication: data.medicationName,
+        dosage: data.dosage,
+        route: data.route,
+        time: data.times && data.times.length > 0 ? data.times[0] : '08:00',
+        notes: `Instructions: ${data.instructions}; Prescriber: ${data.prescriber}`
+      };
+      await api.updateMedicationSchedule(data.medicationId, scheduleUpdates);
+      const list = await api.getMedications();
+      setMedications(list);
+    } catch (err) {
+      console.error('Failed to update medication schedule:', err);
+    }
+  };
+
+  const handleSaveMedications = async (entries: any[]) => {
+    try {
+      const targetUser = (selectedUser && selectedUser.id !== 0)
+        ? selectedUser
+        : (serviceUsersList[0] || { id: 1, name: 'Sarah Johnson', photo: '👧' });
+
+      const newMeds = entries.map(entry => {
+        let time = '08:00';
+        if (entry.frequency.includes('evening')) {
+          time = '20:00';
+        } else if (entry.frequency.includes('afternoon') || entry.frequency.includes('12:00')) {
+          time = '12:00';
+        }
+
+        return {
+          serviceUser: targetUser.name,
+          userId: targetUser.id,
+          userPhoto: targetUser.photo || '👧',
+          medication: entry.name,
+          dosage: entry.dosage,
+          time,
+          route: entry.route || 'Oral',
+          riskLevel: 'green' as const
+        };
+      });
+
+      await api.addMedications(newMeds);
+      const list = await api.getMedications();
+      setMedications(list);
+    } catch (err) {
+      console.error('Failed to add medications:', err);
+    }
   };
 
   return (
@@ -633,6 +586,7 @@ export default function Medications() {
             setSelectedUser(null);
           }}
           userName={selectedUser.name}
+          onConfirm={handleSaveMedications}
         />
       )}
       {selectedMedication && (

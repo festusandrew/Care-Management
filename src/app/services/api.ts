@@ -7,7 +7,8 @@ import {
   ClockEvent, 
   LeaveRequest, 
   HistoryRecord,
-  LeaveStatus
+  LeaveStatus,
+  MedicationRecord
 } from '../mockData/mockStore';
 
 // Helper to simulate network latency in mock mode
@@ -136,5 +137,63 @@ export const api = {
       return mockStore.getAttendanceHistory();
     }
     return apiClient<HistoryRecord[]>('/attendance/history');
+  },
+
+  getMedications: async (): Promise<MedicationRecord[]> => {
+    if (IS_MOCK_MODE) {
+      await delay();
+      return mockStore.getMedications();
+    }
+    return apiClient<MedicationRecord[]>('/medications');
+  },
+
+  addMedications: async (newMeds: Omit<MedicationRecord, 'id' | 'status' | 'administeredBy' | 'administeredAt' | 'notes'>[]): Promise<MedicationRecord[]> => {
+    if (IS_MOCK_MODE) {
+      await delay();
+      return mockStore.addMedications(newMeds);
+    }
+    return apiClient<MedicationRecord[]>('/medications', {
+      method: 'POST',
+      body: JSON.stringify({ medications: newMeds })
+    });
+  },
+
+  administerMedication: async (id: number, administeredBy: string, notes?: string): Promise<MedicationRecord> => {
+    if (IS_MOCK_MODE) {
+      await delay();
+      const res = mockStore.administerMedication(id, administeredBy, notes);
+      if (!res) throw new Error('Medication record not found');
+      return res;
+    }
+    return apiClient<MedicationRecord>(`/medications/${id}/administer`, {
+      method: 'POST',
+      body: JSON.stringify({ administeredBy, notes })
+    });
+  },
+
+  updateMedicationStatus: async (id: number, status: string, notes?: string): Promise<MedicationRecord> => {
+    if (IS_MOCK_MODE) {
+      await delay();
+      const res = mockStore.updateMedicationStatus(id, status, notes);
+      if (!res) throw new Error('Medication record not found');
+      return res;
+    }
+    return apiClient<MedicationRecord>(`/medications/${id}/status`, {
+      method: 'PUT',
+      body: JSON.stringify({ status, notes })
+    });
+  },
+
+  updateMedicationSchedule: async (id: number, schedule: Partial<MedicationRecord>): Promise<MedicationRecord> => {
+    if (IS_MOCK_MODE) {
+      await delay();
+      const res = mockStore.updateMedicationSchedule(id, schedule);
+      if (!res) throw new Error('Medication record not found');
+      return res;
+    }
+    return apiClient<MedicationRecord>(`/medications/${id}/schedule`, {
+      method: 'PUT',
+      body: JSON.stringify(schedule)
+    });
   }
 };

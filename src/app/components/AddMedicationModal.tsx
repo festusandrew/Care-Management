@@ -5,6 +5,7 @@ interface AddMedicationModalProps {
   isOpen: boolean;
   onClose: () => void;
   userName: string;
+  onConfirm?: (entries: MedEntry[]) => void;
 }
 
 type MedEntry = {
@@ -176,7 +177,7 @@ function MedCard({
   );
 }
 
-export function AddMedicationModal({ isOpen, onClose, userName }: AddMedicationModalProps) {
+export function AddMedicationModal({ isOpen, onClose, userName, onConfirm }: AddMedicationModalProps) {
   const [entries, setEntries] = useState<MedEntry[]>([blank()]);
 
   const addEntry = () => setEntries(es => [...es, blank()]);
@@ -193,7 +194,11 @@ export function AddMedicationModal({ isOpen, onClose, userName }: AddMedicationM
 
   const handleSubmit = (ev: React.FormEvent) => {
     ev.preventDefault();
-    console.log('Medications submitted:', entries);
+    if (onConfirm) {
+      onConfirm(entries);
+    } else {
+      console.log('Medications submitted:', entries);
+    }
     handleClose();
   };
 
