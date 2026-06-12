@@ -530,9 +530,78 @@ export default function Recruitment() {
   const [viewingJob, setViewingJob] = useState<JobPosting | null>(null);
   const [editingJob, setEditingJob] = useState<JobPosting | null>(null);
 
+  // Drag and drop states
+  const [draggingId, setDraggingId] = useState<number | null>(null);
+  const [activeDragOverStage, setActiveDragOverStage] = useState<Stage | null>(null);
+  const [dragRejectingCandidate, setDragRejectingCandidate] = useState<Candidate | null>(null);
+
+  // Inline add candidate states
+  const [addingCandidateStage, setAddingCandidateStage] = useState<Stage | null>(null);
+  const [newName, setNewName] = useState('');
+  const [newRole, setNewRole] = useState('Support Worker');
+  const [newLocation, setNewLocation] = useState('Bristol');
+  const [newExperience, setNewExperience] = useState('2 years');
+
   const moveStage = (id: number, stage: Stage) => {
     setCandidates(cs => cs.map(c => c.id === id ? { ...c, stage } : c));
     if (selectedCandidate?.id === id) setSelectedCandidate(c => c ? { ...c, stage } : c);
+  };
+
+  const handleDrop = (e: React.DragEvent, targetStage: Stage) => {
+    e.preventDefault();
+    const id = Number(e.dataTransfer.getData("text/plain"));
+    if (isNaN(id)) return;
+    const cand = candidates.find(c => c.id === id);
+    if (!cand) return;
+
+    // Directly move candidate to the dropped stage, including 'rejected'
+    moveStage(id, targetStage);
+    setActiveDragOverStage(null);
+    setDraggingId(null);
+  };
+
+  const handleAddInlineCandidate = (stage: Stage) => {
+    if (!newName.trim()) return;
+
+    const names = newName.trim().split(/\s+/);
+    const initials = names.length > 1
+      ? (names[0][0] + names[names.length - 1][0]).toUpperCase()
+      : (names[0][0] || '').toUpperCase();
+
+    const colors = [
+      'bg-purple-500', 'bg-blue-500', 'bg-rose-500',
+      'bg-amber-500', 'bg-teal-500', 'bg-indigo-500', 'bg-pink-500'
+    ];
+    const color = colors[Math.floor(Math.random() * colors.length)];
+
+    const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    const today = new Date();
+    const formattedDate = `${today.getDate()} ${months[today.getMonth()]} ${today.getFullYear()}`;
+
+    const newCandidate: Candidate = {
+      id: Date.now(),
+      name: newName.trim(),
+      initials,
+      color,
+      role: newRole,
+      stage,
+      appliedDate: formattedDate,
+      location: newLocation.trim() || 'Bristol',
+      email: `${newName.trim().toLowerCase().replace(/\s+/g, '.')}@email.com`,
+      phone: '07700 900' + Math.floor(100 + Math.random() * 900),
+      experience: newExperience.trim() || '2 years',
+      rating: 4,
+      dbsStatus: 'clear',
+      rightToWork: true,
+      references: 0,
+      referencesRequired: 2,
+      tags: ['New Application'],
+      notes: ''
+    };
+
+    setCandidates(cs => [...cs, newCandidate]);
+    setAddingCandidateStage(null);
+    setNewName('');
   };
 
   const stats = [
@@ -634,19 +703,77 @@ export default function Recruitment() {
             {/* Kanban */}
             {viewMode === 'kanban' && (
               <div className="overflow-x-auto pb-4">
-                <div className="flex gap-4 min-w-max">
+                <div className="flex gap-4 min-w-max p-1">
                   {stages.map(stage => {
                     const cfg = stageConfig[stage];
                     const stageCandidates = candidates.filter(c => c.stage === stage);
+                    
+                    const draggedCandidate = draggingId !== null ? candidates.find(c => c.id === draggingId) : null;
+                    const sourceStage = draggedCandidate ? draggedCandidate.stage : null;
+                    const isDragOver = activeDragOverStage === stage;
+                    const isValidTarget = draggingId !== null && sourceStage !== stage;
+
+                    let columnBorderClass = 'border-transparent bg-gray-50/50';
+                    if (isDragOver) {
+                      columnBorderClass = stage === 'rejected'
+                        ? 'bg-red-50/50 border-dashed border-red-400 scale-[1.01] shadow-sm'
+                        : 'bg-blue-50/50 border-dashed border-blue-400 scale-[1.01] shadow-sm';
+                    } else if (isValidTarget) {
+                      columnBorderClass = stage === 'rejected'
+                        ? 'bg-red-50/10 border-dashed border-red-200/60'
+                        : 'bg-blue-50/10 border-dashed border-blue-200/60';
+                    }
+
                     return (
-                      <div key={stage} className="w-64 flex-shrink-0">
-                        <div className={`flex items-center justify-between mb-3 px-3 py-2 rounded-lg border ${cfg.bg} ${cfg.border}`}>
+                      <div
+                        key={stage}
+                        className={`w-64 flex-shrink-0 p-3 rounded-2xl border-2 transition-all duration-200 ${columnBorderClass}`}
+                        aria-dropeffect="move"
+                        onDragOver={(e) => {
+                          e.stopPropagation();
+                          e.preventDefault();
+                          e.dataTransfer.dropEffect = "move";
+                        }}
+                        onDragEnter={(e) => {
+                          e.stopPropagation();
+                          e.preventDefault();
+                          setActiveDragOverStage(stage);
+                        }}
+                        onDragLeave={(e) => {
+                          e.stopPropagation();
+                          if (activeDragOverStage === stage) setActiveDragOverStage(null);
+                        }}
+                        onDrop={(e) => handleDrop(e, stage)}
+                      >
+                        <div className={`flex items-center justify-between mb-3 px-3 py-2 rounded-lg border ${cfg.bg} ${cfg.border} ${
+                          draggingId !== null ? 'pointer-events-none select-none' : ''
+                        }`}>
                           <span className={`text-sm ${cfg.color}`}>{cfg.label}</span>
                           <span className={`text-xs px-2 py-0.5 rounded-full ${cfg.bg} ${cfg.color} border ${cfg.border}`}>{stageCandidates.length}</span>
                         </div>
                         <div className="space-y-3">
                           {stageCandidates.map(c => (
-                            <div key={c.id} className={`rounded-xl border p-4 shadow-sm transition-all ${c.stage === 'rejected' ? 'bg-red-50/50 border-red-100 opacity-70 hover:opacity-90' : 'bg-white border-gray-100 hover:border-blue-200 hover:shadow-md'}`}>
+                            <div
+                              key={c.id}
+                              draggable={true}
+                              onDragStart={(e) => {
+                                  e.stopPropagation();
+                                  e.dataTransfer.setData("text/plain", c.id.toString());
+                                  e.dataTransfer.effectAllowed = "move";
+                                  setDraggingId(c.id);
+                                }}
+                              onDragEnd={() => {
+                                setDraggingId(null);
+                                setActiveDragOverStage(null);
+                              }}
+                              className={`rounded-xl border p-4 shadow-sm transition-all cursor-grab active:cursor-grabbing ${
+                                c.stage === 'rejected'
+                                  ? 'bg-red-50/50 border-red-100 opacity-70 hover:opacity-90'
+                                  : 'bg-white border-gray-100 hover:border-blue-200 hover:shadow-md'
+                              } ${c.id === draggingId ? 'opacity-40 border-dashed border-blue-400 scale-[0.98]' : ''} ${
+                                draggingId !== null && c.id !== draggingId ? 'pointer-events-none' : ''
+                              }`}
+                            >
                               <div className="flex items-start gap-3 mb-3">
                                 <div className={`w-9 h-9 rounded-full ${c.color} flex items-center justify-center text-white text-xs shrink-0 ${c.stage === 'rejected' ? 'grayscale' : ''}`}>{c.initials}</div>
                                 <div className="min-w-0">
@@ -685,10 +812,108 @@ export default function Recruitment() {
                               </div>
                             </div>
                           ))}
-                          {stage !== 'rejected' && (
-                            <button className="w-full py-2.5 border-2 border-dashed border-gray-200 rounded-xl text-xs text-gray-400 hover:border-blue-300 hover:text-blue-500 transition-colors">
-                              + Add candidate
-                            </button>
+
+                          {/* Placeholder when dragging over */}
+                          {isDragOver && isValidTarget && (
+                            <div className={`rounded-xl border-2 border-dashed h-28 flex items-center justify-center text-xs font-medium animate-pulse pointer-events-none ${
+                              stage === 'rejected'
+                                ? 'border-red-300 bg-red-50/30 text-red-500'
+                                : 'border-blue-300 bg-blue-50/30 text-blue-500'
+                            }`}>
+                              Drop candidate here
+                            </div>
+                          )}
+
+                          {addingCandidateStage === stage ? (
+                            <div className="bg-white rounded-xl border border-blue-200 p-4 shadow-md space-y-3">
+                              <div>
+                                <label className="block text-[10px] uppercase font-bold text-gray-400 mb-1">Candidate Name *</label>
+                                <input
+                                  type="text"
+                                  placeholder="Full Name"
+                                  className="w-full px-2.5 py-1.5 text-xs border border-gray-200 rounded-lg outline-none focus:border-blue-400 focus:ring-1 focus:ring-blue-100 transition-all text-gray-900"
+                                  value={newName}
+                                  onChange={e => setNewName(e.target.value)}
+                                  onKeyDown={e => {
+                                    if (e.key === 'Enter') handleAddInlineCandidate(stage);
+                                  }}
+                                  autoFocus
+                                />
+                              </div>
+                              <div>
+                                <label className="block text-[10px] uppercase font-bold text-gray-400 mb-1">Role</label>
+                                <select
+                                  className="w-full px-2.5 py-1.5 text-xs border border-gray-200 rounded-lg outline-none focus:border-blue-400 bg-white text-gray-900"
+                                  value={newRole}
+                                  onChange={e => setNewRole(e.target.value)}
+                                >
+                                  <option>Support Worker</option>
+                                  <option>Senior Carer</option>
+                                  <option>Care Coordinator</option>
+                                  <option>Night Support Worker</option>
+                                  <option>Team Leader</option>
+                                </select>
+                              </div>
+                              <div className="grid grid-cols-2 gap-2">
+                                <div>
+                                  <label className="block text-[10px] uppercase font-bold text-gray-400 mb-1">Location</label>
+                                  <input
+                                    type="text"
+                                    placeholder="Bristol"
+                                    className="w-full px-2.5 py-1.5 text-xs border border-gray-200 rounded-lg outline-none focus:border-blue-400 focus:ring-1 focus:ring-blue-100 transition-all text-gray-900"
+                                    value={newLocation}
+                                    onChange={e => setNewLocation(e.target.value)}
+                                    onKeyDown={e => {
+                                      if (e.key === 'Enter') handleAddInlineCandidate(stage);
+                                    }}
+                                  />
+                                </div>
+                                <div>
+                                  <label className="block text-[10px] uppercase font-bold text-gray-400 mb-1">Experience</label>
+                                  <input
+                                    type="text"
+                                    placeholder="2 years"
+                                    className="w-full px-2.5 py-1.5 text-xs border border-gray-200 rounded-lg outline-none focus:border-blue-400 focus:ring-1 focus:ring-blue-100 transition-all text-gray-900"
+                                    value={newExperience}
+                                    onChange={e => setNewExperience(e.target.value)}
+                                    onKeyDown={e => {
+                                      if (e.key === 'Enter') handleAddInlineCandidate(stage);
+                                    }}
+                                  />
+                                </div>
+                              </div>
+                              <div className="flex gap-2 justify-end pt-1">
+                                <button
+                                  onClick={() => setAddingCandidateStage(null)}
+                                  className="px-2.5 py-1.5 text-xs text-gray-500 hover:bg-gray-100 rounded-lg transition-colors"
+                                >
+                                  Cancel
+                                </button>
+                                <button
+                                  onClick={() => handleAddInlineCandidate(stage)}
+                                  className="px-3 py-1.5 text-xs bg-blue-600 text-white hover:bg-blue-700 rounded-lg font-medium shadow-sm transition-colors"
+                                >
+                                  Add Card
+                                </button>
+                              </div>
+                            </div>
+                          ) : (
+                            stage !== 'rejected' && (
+                              <button
+                                onClick={() => {
+                                  setAddingCandidateStage(stage);
+                                  setNewName('');
+                                  setNewRole('Support Worker');
+                                  setNewLocation('Bristol');
+                                  setNewExperience('2 years');
+                                }}
+                                className={`w-full py-2.5 border-2 border-dashed border-gray-200 rounded-xl text-xs text-gray-400 hover:border-blue-300 hover:text-blue-500 hover:bg-blue-50/20 transition-colors ${
+                                  draggingId !== null ? 'pointer-events-none' : ''
+                                }`}
+                              >
+                                + Add candidate
+                              </button>
+                            )
                           )}
                         </div>
                       </div>
@@ -919,6 +1144,19 @@ export default function Recruitment() {
           job={editingJob}
           onClose={() => setEditingJob(null)}
           onSave={updated => setJobs(js => js.map(j => j.id === updated.id ? updated : j))}
+        />
+      )}
+      {dragRejectingCandidate && (
+        <RejectionEmailModal
+          candidate={dragRejectingCandidate}
+          onClose={() => setDragRejectingCandidate(null)}
+          onConfirm={() => {
+            setCandidates(cs => cs.map(c => c.id === dragRejectingCandidate.id ? { ...c, stage: 'rejected' } : c));
+            if (selectedCandidate?.id === dragRejectingCandidate.id) {
+              setSelectedCandidate(c => c ? { ...c, stage: 'rejected' } : c);
+            }
+            setDragRejectingCandidate(null);
+          }}
         />
       )}
     </div>
