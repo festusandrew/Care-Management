@@ -16,7 +16,7 @@ export async function apiClient<T>(
   options: RequestInit = {}
 ): Promise<T> {
   const url = `${VITE_API_URL}${endpoint}`;
-  
+
   const headers = new Headers({
     'Content-Type': 'application/json',
     ...(options.headers || {}),

@@ -1,11 +1,11 @@
 import { IS_MOCK_MODE, apiClient } from './apiClient';
-import { 
-  mockStore, 
-  Alert, 
-  ServiceUser, 
-  StaffMember, 
-  ClockEvent, 
-  LeaveRequest, 
+import {
+  mockStore,
+  Alert,
+  ServiceUser,
+  StaffMember,
+  ClockEvent,
+  LeaveRequest,
   HistoryRecord,
   LeaveStatus,
   MedicationRecord
@@ -114,8 +114,8 @@ export const api = {
   },
 
   updateLeaveRequestStatus: async (
-    id: number, 
-    status: LeaveStatus, 
+    id: number,
+    status: LeaveStatus,
     note?: string
   ): Promise<LeaveRequest> => {
     if (IS_MOCK_MODE) {
