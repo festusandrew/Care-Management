@@ -93,6 +93,18 @@ export const api = {
     });
   },
 
+  clockInStaff: async (staffId: number): Promise<ClockEvent> => {
+    if (IS_MOCK_MODE) {
+      await delay();
+      const res = mockStore.clockInStaff(staffId);
+      if (!res) throw new Error('Staff member clock event not found');
+      return res;
+    }
+    return apiClient<ClockEvent>(`/attendance/clock-in/${staffId}`, {
+      method: 'POST'
+    });
+  },
+
   getLeaveRequests: async (): Promise<LeaveRequest[]> => {
     if (IS_MOCK_MODE) {
       await delay();

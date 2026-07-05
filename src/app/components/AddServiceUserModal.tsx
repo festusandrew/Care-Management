@@ -1,4 +1,4 @@
-import { useState, useRef, useCallback } from 'react';
+import { useState, useRef, useCallback, useMemo } from 'react';
 import { X, User, Phone, Mail, MapPin, Heart, Stethoscope, Briefcase, Users, DollarSign, CheckCircle2, ChevronRight, ChevronLeft, Plus, Trash2, Shield, Home, UserCheck, Camera, Upload } from 'lucide-react';
 import { api } from '../services/api';
 
@@ -109,6 +109,7 @@ export function AddServiceUserModal({ isOpen, onClose, onSuccess }: AddServiceUs
 
   /* ── Funding ── */
   const [funderType,   setFunderType]   = useState('');
+  const [otherFunderType, setOtherFunderType] = useState('');
   const [funderName,   setFunderName]   = useState('');
   const [funderRef,    setFunderRef]    = useState('');
   const [weeklyRate,   setWeeklyRate]   = useState('');
@@ -145,6 +146,48 @@ export function AddServiceUserModal({ isOpen, onClose, onSuccess }: AddServiceUs
   const stepIndex = STEPS.findIndex(s => s.key === step);
   const isFirst = stepIndex === 0;
   const isLast  = stepIndex === STEPS.length - 1;
+  // Overall form validation for required fields across steps (used for final Create button)
+  const isFormValid =
+    firstName && lastName && dob &&
+    location && careManager && riskLevel &&
+    (funderType === 'other' ? otherFunderType : funderType) &&
+    nokName && nokRelation && nokPhone;
+
+  // Validation per step for navigation (Next button)
+  const isStepValid = useMemo(() => {
+    switch (step) {
+      case 'personal':
+        return !!firstName && !!lastName && !!dob;
+      case 'contacts':
+        return !!nokName && !!nokRelation && !!nokPhone;
+      case 'care':
+        return !!location && !!careManager && !!riskLevel;
+      case 'medical':
+        // No mandatory fields for medical step currently
+        return true;
+      case 'visitors':
+        // No mandatory fields for visitors step currently
+        return true;
+      default:
+        return true;
+    }
+  }, [step, firstName, lastName, dob, location, careManager, riskLevel, nokName, nokRelation, nokPhone]);
+
+  // State to trigger visual error feedback
+  const [showErrors, setShowErrors] = useState(false);
+
+  // Helper to apply error styling
+  const inputClass = (value: string) => `${INPUT} ${showErrors && !value ? 'border-red-500' : ''}`;
+
+  // Handler for Next button click
+  const handleNext = () => {
+    if (isStepValid) {
+      setStep(STEPS[stepIndex + 1].key);
+      setShowErrors(false);
+    } else {
+      setShowErrors(true);
+    }
+  };
 
   const handleClose = () => {
     setStep('personal');
@@ -282,13 +325,16 @@ export function AddServiceUserModal({ isOpen, onClose, onSuccess }: AddServiceUs
               <Section icon={<User size={15} />} title="Basic Information">
                 <div className="grid grid-cols-2 gap-4">
                   <Field label="First Name *">
-                    <input type="text" className={INPUT} placeholder="Jane" value={firstName} onChange={e => setFirstName(e.target.value)} />
+                    <input required type="text" className={inputClass(firstName)} placeholder="Jane" value={firstName} onChange={e => setFirstName(e.target.value)} />
+                    {showErrors && !firstName && (<p className="text-xs text-red-600 mt-1">First name is required</p>)}
                   </Field>
                   <Field label="Last Name *">
-                    <input type="text" className={INPUT} placeholder="Doe" value={lastName} onChange={e => setLastName(e.target.value)} />
+                    <input required type="text" className={inputClass(lastName)} placeholder="Doe" value={lastName} onChange={e => setLastName(e.target.value)} />
+                    {showErrors && !lastName && (<p className="text-xs text-red-600 mt-1">Last name is required</p>)}
                   </Field>
                   <Field label="Date of Birth *">
-                    <input type="date" className={INPUT} value={dob} onChange={e => setDob(e.target.value)} />
+                    <input required type="date" className={inputClass(dob)} value={dob} onChange={e => setDob(e.target.value)} />
+                    {showErrors && !dob && (<p className="text-xs text-red-600 mt-1">Date of birth is required</p>)}
                   </Field>
                   <Field label="Gender">
                     <select className={INPUT} value={gender} onChange={e => setGender(e.target.value)}>
@@ -300,7 +346,28 @@ export function AddServiceUserModal({ isOpen, onClose, onSuccess }: AddServiceUs
                     </select>
                   </Field>
                   <Field label="Nationality">
-                    <input type="text" className={INPUT} placeholder="e.g. British" value={nationality} onChange={e => setNationality(e.target.value)} />
+                    <select className={INPUT} value={nationality} onChange={e => setNationality(e.target.value)}>
+                      <option value="">Select nationality...</option>
+                      <option>British</option>
+                      <option>Irish</option>
+                      <option>English</option>
+                      <option>Scottish</option>
+                      <option>Welsh</option>
+                      <option>American</option>
+                      <option>Canadian</option>
+                      <option>Australian</option>
+                      <option>French</option>
+                      <option>German</option>
+                      <option>Spanish</option>
+                      <option>Italian</option>
+                      <option>Polish</option>
+                      <option>Indian</option>
+                      <option>Pakistani</option>
+                      <option>Chinese</option>
+                      <option>Nigerian</option>
+                      <option>Jamaican</option>
+                      <option>Other</option>
+                    </select>
                   </Field>
                   <Field label="NHS Number">
                     <input type="text" className={INPUT} placeholder="000 000 0000" value={nhsNumber} onChange={e => setNhsNumber(e.target.value)} />
@@ -313,7 +380,8 @@ export function AddServiceUserModal({ isOpen, onClose, onSuccess }: AddServiceUs
               <Section icon={<Phone size={15} />} title="Contact Details">
                 <div className="grid grid-cols-2 gap-4">
                   <Field label="Phone">
-                    <input type="tel" className={INPUT} placeholder="+44 7700 900000" value={phone} onChange={e => setPhone(e.target.value)} />
+                    <input required type="tel" className={inputClass(nokPhone)} placeholder="+44 7700 900000" value={nokPhone} onChange={e => setNokPhone(e.target.value)} />
+                    {showErrors && !nokPhone && (<p className="text-xs text-red-600 mt-1">Phone is required</p>)}
                   </Field>
                   <Field label="Email">
                     <input type="email" className={INPUT} placeholder="name@example.com" value={email} onChange={e => setEmail(e.target.value)} />
@@ -332,13 +400,15 @@ export function AddServiceUserModal({ isOpen, onClose, onSuccess }: AddServiceUs
               <Section icon={<Heart size={15} />} title="Next of Kin">
                 <div className="grid grid-cols-2 gap-4">
                   <Field label="Full Name *">
-                    <input type="text" className={INPUT} placeholder="Jane Doe" value={nokName} onChange={e => setNokName(e.target.value)} />
+                    <input required type="text" className={inputClass(nokName)} placeholder="Jane Doe" value={nokName} onChange={e => setNokName(e.target.value)} />
+                    {showErrors && !nokName && (<p className="text-xs text-red-600 mt-1">Full name is required</p>)}
                   </Field>
                   <Field label="Relationship *">
-                    <input type="text" className={INPUT} placeholder="e.g. Mother, Brother" value={nokRelation} onChange={e => setNokRelation(e.target.value)} />
+                    <input required type="text" className={inputClass(nokRelation)} placeholder="e.g. Mother, Brother" value={nokRelation} onChange={e => setNokRelation(e.target.value)} />
+                    {showErrors && !nokRelation && (<p className="text-xs text-red-600 mt-1">Relationship is required</p>)}
                   </Field>
                   <Field label="Phone *">
-                    <input type="tel" className={INPUT} placeholder="+44 7700 900000" value={nokPhone} onChange={e => setNokPhone(e.target.value)} />
+                    <input required type="tel" className={INPUT} placeholder="+44 7700 900000" value={nokPhone} onChange={e => setNokPhone(e.target.value)} />
                   </Field>
                   <Field label="Email">
                     <input type="email" className={INPUT} placeholder="nok@example.com" value={nokEmail} onChange={e => setNokEmail(e.target.value)} />
@@ -401,7 +471,7 @@ export function AddServiceUserModal({ isOpen, onClose, onSuccess }: AddServiceUs
               <Section icon={<Home size={15} />} title="Care Placement">
                 <div className="grid grid-cols-2 gap-4">
                   <Field label="Location *">
-                    <select className={INPUT} value={location} onChange={e => setLocation(e.target.value)}>
+                    <select required className={inputClass(location)} value={location} onChange={e => setLocation(e.target.value)}>
                       <option value="">Select location...</option>
                       <option>Riverside House</option>
                       <option>Oak Tree Lodge</option>
@@ -412,7 +482,7 @@ export function AddServiceUserModal({ isOpen, onClose, onSuccess }: AddServiceUs
                     <input type="date" className={INPUT} value={admissionDate} onChange={e => setAdmissionDate(e.target.value)} />
                   </Field>
                   <Field label="Care Manager *">
-                    <select className={INPUT} value={careManager} onChange={e => setCareManager(e.target.value)}>
+                    <select required className={inputClass(careManager)} value={careManager} onChange={e => setCareManager(e.target.value)}>
                       <option value="">Select...</option>
                       <option>Dr. Emily Carter</option>
                       <option>Sarah Williams</option>
@@ -431,7 +501,7 @@ export function AddServiceUserModal({ isOpen, onClose, onSuccess }: AddServiceUs
                     <input type="text" className={INPUT} placeholder="Social worker name" value={socialWorker} onChange={e => setSocialWorker(e.target.value)} />
                   </Field>
                   <Field label="Risk Level *">
-                    <select className={INPUT} value={riskLevel} onChange={e => setRiskLevel(e.target.value)}>
+                    <select required className={inputClass(riskLevel)} value={riskLevel} onChange={e => setRiskLevel(e.target.value)}>
                       <option value="green">Low Risk</option>
                       <option value="amber">Medium Risk</option>
                       <option value="red">High Risk</option>
@@ -446,11 +516,12 @@ export function AddServiceUserModal({ isOpen, onClose, onSuccess }: AddServiceUs
                 <p className="text-xs text-gray-500 mb-4">Record who is funding the care — this will appear in the Finances section of the service user profile.</p>
                 <div className="grid grid-cols-2 gap-4">
                   <Field label="Funding Type *" className="col-span-2">
-                    <div className="grid grid-cols-3 gap-2">
+                    <div className="grid grid-cols-4 gap-2">
                       {[
                         { value: 'local-authority', label: 'Local Authority' },
                         { value: 'nhs',             label: 'NHS / CHC' },
                         { value: 'private-family',  label: 'Private / Family' },
+                        { value: 'other',           label: 'Others' },
                       ].map(opt => (
                         <button
                           key={opt.value}
@@ -463,6 +534,21 @@ export function AddServiceUserModal({ isOpen, onClose, onSuccess }: AddServiceUs
                       ))}
                     </div>
                   </Field>
+                  {funderType === 'other' && (
+                    <Field label="Specify Funding Type *" className="col-span-2">
+                      <input
+                        required
+                        type="text"
+                        className={inputClass(otherFunderType)}
+                        placeholder="e.g. Charitable Trust, Personal Budget"
+                        value={otherFunderType}
+                        onChange={e => setOtherFunderType(e.target.value)}
+                      />
+                      {showErrors && !otherFunderType && (
+                        <p className="text-xs text-red-600 mt-1">Please specify the funding type</p>
+                      )}
+                    </Field>
+                  )}
                   <Field label="Funder Name">
                     <input type="text" className={INPUT} placeholder="e.g. Bristol City Council" value={funderName} onChange={e => setFunderName(e.target.value)} />
                   </Field>
@@ -619,11 +705,11 @@ export function AddServiceUserModal({ isOpen, onClose, onSuccess }: AddServiceUs
               Cancel
             </button>
             {isLast ? (
-              <button type="button" onClick={handleCreate} className="flex items-center gap-2 px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition-colors text-sm">
+              <button type="button" onClick={handleCreate} disabled={!isFormValid} className={`flex items-center gap-2 px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition-colors text-sm ${!isFormValid ? 'opacity-50 cursor-not-allowed' : ''}`} >
                 <CheckCircle2 size={16} /> Create Profile
               </button>
             ) : (
-              <button type="button" onClick={() => setStep(STEPS[stepIndex + 1].key)} className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm">
+              <button type="button" onClick={handleNext} className={`flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm ${!isStepValid ? 'opacity-50 cursor-not-allowed' : ''}`}>
                 Next <ChevronRight size={16} />
               </button>
             )}

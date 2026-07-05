@@ -211,6 +211,36 @@ let serviceUsers: ServiceUser[] = [
     upcomingReview: '1 week',
     conditions: ['PTSD', 'Anxiety'],
     phone: '07700 900987',
+  },
+  {
+    id: 7,
+    name: 'David Thompson',
+    age: 15,
+    photo: '👦',
+    status: 'active',
+    riskLevel: 'green',
+    mood: '😊',
+    location: 'Meadow View',
+    careManager: 'James Mitchell',
+    lastIncident: 'None',
+    upcomingReview: '3 weeks',
+    conditions: ['None'],
+    phone: '07700 900555',
+  },
+  {
+    id: 8,
+    name: 'Lily Watson',
+    age: 13,
+    photo: '👧',
+    status: 'active',
+    riskLevel: 'amber',
+    mood: '😐',
+    location: 'Riverside House',
+    careManager: 'Sarah Williams',
+    lastIncident: '2 days ago',
+    upcomingReview: '1 week',
+    conditions: ['Anxiety'],
+    phone: '07700 900222',
   }
 ];
 
@@ -515,6 +545,19 @@ export const mockStore = {
     clockEvents = clockEvents.map(e => {
       if (e.staffId === staffId) {
         updatedEvent = { ...e, clockOut: nowStr };
+        return updatedEvent;
+      }
+      return e;
+    });
+    return updatedEvent;
+  },
+
+  clockInStaff: (staffId: number) => {
+    const nowStr = new Date().toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
+    let updatedEvent: ClockEvent | null = null;
+    clockEvents = clockEvents.map(e => {
+      if (e.staffId === staffId) {
+        updatedEvent = { ...e, clockIn: nowStr, clockOut: null };
         return updatedEvent;
       }
       return e;

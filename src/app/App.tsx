@@ -15,6 +15,7 @@ import Recruitment from './pages/Recruitment';
 import CommunicationHub from './pages/CommunicationHub';
 import Financial from './pages/Financial';
 import Analytics from './pages/Analytics';
+import LeaveRequests from './pages/LeaveRequests';
 import { NavigationProvider, useNavigation } from './context/NavigationContext';
 
 function AppContent() {
@@ -28,6 +29,8 @@ function AppContent() {
         return <ServiceUsers />;
       case 'staff':
         return <Staff />;
+      case 'leave-requests':
+        return <LeaveRequests />;
       case 'staff-profile':
         return <StaffProfile id={pageParams?.id} showTimesheet={pageParams?.showTimesheet} />;
       case 'daily-logs':

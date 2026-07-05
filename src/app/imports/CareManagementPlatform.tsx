@@ -1,4 +1,5 @@
 import svgPaths from "./svg-iz9vfehgu8";
+import { AlertCircle, AlertTriangle, Info, ChevronRight } from 'lucide-react';
 
 function Heading() {
   return (
@@ -385,8 +386,8 @@ function Card1() {
 
 function Heading4() {
   return (
-    <div className="h-[28px] relative shrink-0 w-full" data-name="Heading 3">
-      <p className="absolute font-['Nunito:Bold',sans-serif] font-bold leading-[28px] left-0 text-[#101828] text-[18px] text-nowrap top-0">{`Service Users' Mood Trends (7 Days)`}</p>
+    <div className="relative shrink-0 w-full" data-name="Heading 3">
+      <p className="font-['Nunito:Bold',sans-serif] font-bold leading-[24px] text-[#101828] text-[16px] whitespace-normal break-words overflow-hidden">{`Service Users' Mood Trends (7 Days)`}</p>
     </div>
   );
 }
@@ -812,7 +813,7 @@ function Container32() {
 
 function Container33() {
   return (
-    <div className="h-[36px] relative shrink-0 w-[316.703px]" data-name="Container">
+    <div className="h-[36px] relative shrink-0 w-full max-w-[316.703px] flex-1 min-w-0" data-name="Container">
       <div className="bg-clip-padding border-0 border-[transparent] border-solid content-stretch flex gap-[16px] items-center relative size-full">
         <Container31 />
         <Container32 />
@@ -846,7 +847,7 @@ function Button() {
 
 function Container34() {
   return (
-    <div className="[grid-area:1_/_1] bg-[#f9fafb] place-self-stretch relative rounded-[10px] shrink-0" data-name="Container">
+    <div className="bg-[#f9fafb] place-self-stretch relative rounded-[10px] shrink-0" data-name="Container">
       <div aria-hidden="true" className="absolute border border-[#f3f4f6] border-solid inset-0 pointer-events-none rounded-[10px]" />
       <div className="flex flex-row items-center size-full">
         <div className="content-stretch flex items-center justify-between px-[17px] py-px relative size-full">
@@ -930,7 +931,7 @@ function Container36() {
 
 function Container37() {
   return (
-    <div className="h-[40px] relative shrink-0 w-[354.031px]" data-name="Container">
+    <div className="h-[40px] relative shrink-0 w-full max-w-[354.031px] flex-1 min-w-0" data-name="Container">
       <div className="bg-clip-padding border-0 border-[transparent] border-solid content-stretch flex gap-[16px] items-center relative size-full">
         <Container35 />
         <Container36 />
@@ -964,7 +965,7 @@ function Button1() {
 
 function Container38() {
   return (
-    <div className="[grid-area:1_/_2] bg-[#f9fafb] place-self-stretch relative rounded-[10px] shrink-0" data-name="Container">
+    <div className="bg-[#f9fafb] place-self-stretch relative rounded-[10px] shrink-0" data-name="Container">
       <div aria-hidden="true" className="absolute border border-[#f3f4f6] border-solid inset-0 pointer-events-none rounded-[10px]" />
       <div className="flex flex-row items-center size-full">
         <div className="content-stretch flex items-center justify-between px-[17px] py-px relative size-full">
@@ -1050,7 +1051,7 @@ function Container40() {
 
 function Container41() {
   return (
-    <div className="h-[40px] relative shrink-0 w-[355.609px]" data-name="Container">
+    <div className="h-[40px] relative shrink-0 w-full max-w-[355.609px] flex-1 min-w-0" data-name="Container">
       <div className="bg-clip-padding border-0 border-[transparent] border-solid content-stretch flex gap-[16px] items-center relative size-full">
         <Container39 />
         <Container40 />
@@ -1084,7 +1085,7 @@ function Button2() {
 
 function Container42() {
   return (
-    <div className="[grid-area:2_/_1] bg-[#f9fafb] place-self-stretch relative rounded-[10px] shrink-0" data-name="Container">
+    <div className="bg-[#f9fafb] place-self-stretch relative rounded-[10px] shrink-0" data-name="Container">
       <div aria-hidden="true" className="absolute border border-[#f3f4f6] border-solid inset-0 pointer-events-none rounded-[10px]" />
       <div className="flex flex-row items-center size-full">
         <div className="content-stretch flex items-center justify-between px-[17px] py-px relative size-full">
@@ -1170,7 +1171,7 @@ function Container44() {
 
 function Container45() {
   return (
-    <div className="h-[40px] relative shrink-0 w-[350.422px]" data-name="Container">
+    <div className="h-[40px] relative shrink-0 w-full max-w-[350.422px] flex-1 min-w-0" data-name="Container">
       <div className="bg-clip-padding border-0 border-[transparent] border-solid content-stretch flex gap-[16px] items-center relative size-full">
         <Container43 />
         <Container44 />
@@ -1204,7 +1205,7 @@ function Button3() {
 
 function Container46() {
   return (
-    <div className="[grid-area:2_/_2] bg-[#f9fafb] place-self-stretch relative rounded-[10px] shrink-0" data-name="Container">
+    <div className="bg-[#f9fafb] place-self-stretch relative rounded-[10px] shrink-0" data-name="Container">
       <div aria-hidden="true" className="absolute border border-[#f3f4f6] border-solid inset-0 pointer-events-none rounded-[10px]" />
       <div className="flex flex-row items-center size-full">
         <div className="content-stretch flex items-center justify-between px-[17px] py-px relative size-full">
@@ -1218,7 +1219,7 @@ function Container46() {
 
 function App3() {
   return (
-    <div className="gap-[16px] grid grid-cols-[repeat(2,_minmax(0px,_1fr))] grid-rows-[repeat(2,_minmax(0px,_1fr))] h-[164px] relative shrink-0 w-full" data-name="App">
+    <div className="gap-[16px] grid grid-cols-1 md:grid-cols-2 w-full" data-name="App">
       <Container34 />
       <Container38 />
       <Container42 />
@@ -1228,13 +1229,84 @@ function App3() {
 }
 
 function Card3() {
+  const alertsData = [
+    {
+      title: 'Missed Medication',
+      desc: '3 missed MAR entries',
+      severity: 'critical',
+      color: 'red',
+      icon: AlertCircle
+    },
+    {
+      title: 'Care Plan Reviews',
+      desc: '2 care plans overdue',
+      severity: 'warning',
+      color: 'amber',
+      icon: AlertTriangle
+    },
+    {
+      title: 'Unresolved Incidents',
+      desc: '2 incidents pending review',
+      severity: 'warning',
+      color: 'amber',
+      icon: AlertTriangle
+    },
+    {
+      title: 'Compliance Updates',
+      desc: '5 items require attention',
+      severity: 'info',
+      color: 'blue',
+      icon: Info
+    }
+  ];
+
   return (
-    <div className="bg-white h-[258px] relative rounded-[10px] shrink-0 w-full" data-name="Card">
+    <div className="bg-white pb-6 relative rounded-[10px] shrink-0 w-full" data-name="Card">
       <div aria-hidden="true" className="absolute border border-[#f3f4f6] border-solid inset-0 pointer-events-none rounded-[10px]" />
-      <div className="size-full">
-        <div className="content-stretch flex flex-col gap-[16px] items-start pb-px pt-[25px] px-[25px] relative size-full">
-          <Heading5 />
-          <App3 />
+      <div className="content-stretch flex flex-col gap-[16px] items-start pt-[25px] px-[25px] relative w-full">
+        <div className="flex items-center justify-between w-full">
+          <div className="flex items-center gap-2.5">
+            <h3 className="font-['Nunito:Bold',sans-serif] font-bold text-[18px] text-[#101828]">Alerts & Notifications</h3>
+            <span className="inline-block text-[12px] px-2.5 py-0.5 font-normal bg-[#ffe2e2] text-[#c10007] rounded-full">
+              3 Action Required
+            </span>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 w-full" data-name="App">
+          {alertsData.map((alert, idx) => {
+            const AlertIcon = alert.icon;
+            const bgClass = 
+              alert.color === 'red' ? 'bg-[#ffe2e2] text-[#c10007] border-[#ffc9c9]' :
+              alert.color === 'amber' ? 'bg-[#fef3c6] text-[#bb4d00] border-[#fee685]' :
+              'bg-[#e0f2fe] text-[#0369a1] border-[#bae6fd]';
+
+            return (
+              <div 
+                key={idx}
+                data-name="Container"
+                className="bg-[#f9fafb] border border-[#f3f4f6] rounded-[10px] p-3 flex items-center justify-between hover:bg-gray-100/50 transition-colors cursor-pointer group"
+              >
+                <div className="flex items-center gap-3 min-w-0">
+                  <div className={`w-9 h-9 rounded-lg border flex items-center justify-center shrink-0 ${bgClass}`}>
+                    <AlertIcon size={18} />
+                  </div>
+                  <div className="min-w-0">
+                    <div className="text-sm font-semibold text-gray-900 leading-tight truncate">{alert.title}</div>
+                    <div className="text-xs text-gray-500 mt-0.5 truncate">{alert.desc}</div>
+                  </div>
+                </div>
+
+                <div 
+                  data-name="Button"
+                  className="flex items-center gap-0.5 text-sm text-[#155dfc] hover:underline font-semibold shrink-0"
+                >
+                  <span>View Details</span>
+                  <ChevronRight size={14} className="text-[#155dfc] transition-transform group-hover:translate-x-0.5" />
+                </div>
+              </div>
+            );
+          })}
         </div>
       </div>
     </div>
@@ -1805,7 +1877,7 @@ function App4() {
 
 function Card4() {
   return (
-    <div className="[grid-area:1_/_1] bg-white place-self-stretch relative rounded-[10px] shrink-0" data-name="Card">
+    <div className="bg-white place-self-stretch relative rounded-[10px] shrink-0" data-name="Card">
       <div aria-hidden="true" className="absolute border border-[#f3f4f6] border-solid inset-0 pointer-events-none rounded-[10px]" />
       <div className="size-full">
         <div className="content-stretch flex flex-col gap-[16px] items-start pb-px pt-[25px] px-[25px] relative size-full">
@@ -2198,7 +2270,7 @@ function App5() {
 
 function Card5() {
   return (
-    <div className="[grid-area:1_/_2] bg-white place-self-stretch relative rounded-[10px] shrink-0" data-name="Card">
+    <div className="bg-white place-self-stretch relative rounded-[10px] shrink-0" data-name="Card">
       <div aria-hidden="true" className="absolute border border-[#f3f4f6] border-solid inset-0 pointer-events-none rounded-[10px]" />
       <div className="size-full">
         <div className="content-stretch flex flex-col gap-[16px] items-start pb-px pt-[25px] px-[25px] relative size-full">
@@ -2689,7 +2761,7 @@ function RechartsZindex2000R4E() {
 
 function Icon16() {
   return (
-    <div className="absolute h-[250px] left-0 overflow-clip top-0 w-[454px]" data-name="Icon">
+    <div className="absolute h-[250px] left-0 overflow-clip top-0 w-full max-w-[454px]" data-name="Icon">
       <RechartsZindex100R />
       <RechartsZindex400R />
       <RechartsZindex500R />
@@ -2726,7 +2798,7 @@ function App6() {
 
 function Card6() {
   return (
-    <div className="[grid-area:1_/_1] bg-white place-self-stretch relative rounded-[10px] shrink-0" data-name="Card">
+    <div className="bg-white place-self-stretch relative rounded-[10px] shrink-0" data-name="Card">
       <div aria-hidden="true" className="absolute border border-[#f3f4f6] border-solid inset-0 pointer-events-none rounded-[10px]" />
       <div className="size-full">
         <div className="content-stretch flex flex-col gap-[16px] items-start pb-px pt-[25px] px-[25px] relative size-full">
@@ -3308,7 +3380,7 @@ function RechartsZindex2000R4R() {
 
 function Icon17() {
   return (
-    <div className="absolute h-[250px] left-0 overflow-clip top-0 w-[454px]" data-name="Icon">
+    <div className="absolute h-[250px] left-0 overflow-clip top-0 w-full max-w-[454px]" data-name="Icon">
       <RechartsZindex100R4F />
       <RechartsZindex300R4K />
       <RechartsZindex500R4M />
@@ -3344,7 +3416,7 @@ function App7() {
 
 function Card7() {
   return (
-    <div className="[grid-area:1_/_2] bg-white place-self-stretch relative rounded-[10px] shrink-0" data-name="Card">
+    <div className="bg-white place-self-stretch relative rounded-[10px] shrink-0" data-name="Card">
       <div aria-hidden="true" className="absolute border border-[#f3f4f6] border-solid inset-0 pointer-events-none rounded-[10px]" />
       <div className="size-full">
         <div className="content-stretch flex flex-col gap-[16px] items-start pb-px pt-[25px] px-[25px] relative size-full">

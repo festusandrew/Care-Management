@@ -2,7 +2,7 @@ import { Sidebar } from '../components/Sidebar';
 import { TopBar } from '../components/TopBar';
 import { Card } from '../components/Card';
 import { Badge } from '../components/Badge';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import {
   Plus, Search, Filter, Download, Upload, CheckCircle, Clock,
   AlertCircle, XCircle, ChevronRight, MoreVertical, FileText,
@@ -1011,32 +1011,238 @@ function RunPayrollModal({ onClose, onConfirm }: { onClose: () => void; onConfir
   );
 }
 
+/* ─── Add / Edit Funding Source Modal ─── */
+function FundingModal({
+  initial,
+  onClose,
+  onSave
+}: {
+  initial?: any;
+  onClose: () => void;
+  onSave: (data: any) => void;
+}) {
+  const [form, setForm] = useState({
+    funder: initial?.funder || '',
+    type: initial?.type || 'Local Authority',
+    weeklyValue: initial?.weeklyValue || '',
+    nextReview: initial?.nextReview && initial?.nextReview !== 'Rolling' ? new Date(initial.nextReview).toISOString().split('T')[0] : '',
+    neverExpires: initial?.nextReview === 'Rolling' || false,
+    contractStart: initial?.contractStart && initial?.contractStart !== 'Various' ? new Date(initial.contractStart).toISOString().split('T')[0] : '',
+    contractEnd: initial?.contractEnd && initial?.contractEnd !== 'Ongoing' ? new Date(initial.contractEnd).toISOString().split('T')[0] : '',
+    paymentTerms: initial?.paymentTerms || '30 days',
+    notes: initial?.notes || '',
+  });
+
+  const handleSave = () => {
+    if (!form.funder || !form.weeklyValue) return;
+    onSave({
+      id: initial?.id || Date.now(),
+      funder: form.funder,
+      type: form.type,
+      serviceUsers: initial?.serviceUsers || 0,
+      weeklyValue: Number(form.weeklyValue),
+      status: initial?.status || 'active',
+      nextReview: form.neverExpires ? 'Rolling' : form.nextReview ? new Date(form.nextReview).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }) : 'Rolling',
+      contractStart: form.contractStart ? new Date(form.contractStart).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }) : '1 Apr 2026',
+      contractEnd: form.neverExpires || !form.contractEnd ? 'Ongoing' : new Date(form.contractEnd).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }),
+      paymentTerms: form.paymentTerms,
+      notes: form.notes,
+      trend: initial?.trend || '0%',
+      lastInvoice: initial?.lastInvoice || '1 Jun 2026'
+    });
+    onClose();
+  };
+
+  return (
+    <div className="fixed inset-0 bg-gray-900/40 flex items-center justify-center z-50 p-4">
+      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md mx-auto overflow-hidden">
+        <div className="flex items-center gap-3 px-6 py-4 border-b border-gray-100 bg-gray-50/50">
+          <div className="w-9 h-9 bg-blue-100 rounded-xl flex items-center justify-center shrink-0">
+            <Plus size={17} className="text-blue-600" />
+          </div>
+          <div className="flex-1">
+            <h2 className="text-base text-gray-950 font-bold">{initial ? 'Edit Funding Source' : 'Add Funding Source'}</h2>
+            <p className="text-xs text-gray-500">Record funder details and contract terms</p>
+          </div>
+          <button onClick={onClose} className="p-1.5 hover:bg-gray-100 rounded-lg transition-colors">
+            <X size={18} className="text-gray-400" />
+          </button>
+        </div>
+        <div className="px-6 py-5 space-y-4 max-h-[70vh] overflow-y-auto">
+          <div>
+            <label className="block text-xs text-gray-500 mb-1 font-semibold">Funder Name *</label>
+            <input
+              type="text"
+              placeholder="e.g. Bristol City Council"
+              className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm outline-none focus:border-blue-400 font-medium"
+              value={form.funder}
+              onChange={e => setForm(f => ({ ...f, funder: e.target.value }))}
+            />
+          </div>
+          <div>
+            <label className="block text-xs text-gray-500 mb-1 font-semibold">Funder Type</label>
+            <select
+              className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm outline-none focus:border-blue-400 bg-white"
+              value={form.type}
+              onChange={e => setForm(f => ({ ...f, type: e.target.value }))}
+            >
+              <option>Local Authority</option>
+              <option>CHC / NHS</option>
+              <option>Self-funded</option>
+              <option>Block Contract</option>
+            </select>
+          </div>
+          <div>
+            <label className="block text-xs text-gray-500 mb-1 font-semibold">Weekly Value (£) *</label>
+            <input
+              type="number"
+              placeholder="e.g. 4200"
+              className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm outline-none focus:border-blue-400 font-medium"
+              value={form.weeklyValue}
+              onChange={e => setForm(f => ({ ...f, weeklyValue: e.target.value }))}
+            />
+          </div>
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="block text-xs text-gray-500 mb-1 font-semibold">Contract Start</label>
+              <input
+                type="date"
+                className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm outline-none focus:border-blue-400 font-medium"
+                value={form.contractStart}
+                onChange={e => setForm(f => ({ ...f, contractStart: e.target.value }))}
+              />
+            </div>
+            <div>
+              <label className="block text-xs text-gray-500 mb-1 font-semibold">Contract End</label>
+              <input
+                type="date"
+                disabled={form.neverExpires}
+                className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm outline-none focus:border-blue-400 disabled:bg-gray-50 font-medium"
+                value={form.contractEnd}
+                onChange={e => setForm(f => ({ ...f, contractEnd: e.target.value }))}
+              />
+            </div>
+          </div>
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="block text-xs text-gray-500 mb-1 font-semibold">Payment Terms</label>
+              <input
+                type="text"
+                placeholder="e.g. 30 days"
+                className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm outline-none focus:border-blue-400 font-medium"
+                value={form.paymentTerms}
+                onChange={e => setForm(f => ({ ...f, paymentTerms: e.target.value }))}
+              />
+            </div>
+            <div>
+              <label className="block text-xs text-gray-500 mb-1 font-semibold">Next Review Date</label>
+              <input
+                type="date"
+                disabled={form.neverExpires}
+                className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm outline-none focus:border-blue-400 disabled:bg-gray-50 font-medium"
+                value={form.nextReview}
+                onChange={e => setForm(f => ({ ...f, nextReview: e.target.value }))}
+              />
+            </div>
+          </div>
+          <div className="flex items-center gap-2">
+            <input
+              type="checkbox"
+              id="neverExpiresFunding"
+              className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+              checked={form.neverExpires}
+              onChange={e => setForm(f => ({ ...f, neverExpires: e.target.checked, nextReview: e.target.checked ? '' : f.nextReview, contractEnd: e.target.checked ? '' : f.contractEnd }))}
+            />
+            <label htmlFor="neverExpiresFunding" className="text-xs text-gray-600 select-none font-medium">Rolling Contract / No Expiry</label>
+          </div>
+          <div>
+            <label className="block text-xs text-gray-500 mb-1 font-semibold">Notes</label>
+            <textarea
+              placeholder="Funder agreement terms..."
+              className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm outline-none focus:border-blue-400 resize-none font-medium"
+              rows={3}
+              value={form.notes}
+              onChange={e => setForm(f => ({ ...f, notes: e.target.value }))}
+            />
+          </div>
+        </div>
+        <div className="flex justify-end gap-3 px-6 py-4 border-t border-gray-100 bg-gray-50/50">
+          <button onClick={onClose} className="px-4 py-2 text-sm text-gray-600 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors font-semibold">Cancel</button>
+          <button
+            onClick={handleSave}
+            disabled={!form.funder || !form.weeklyValue}
+            className="px-5 py-2 text-sm bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed font-semibold"
+          >
+            Save
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 /* ─── View Funding Details Modal ─── */
-function ViewFundingDetailsModal({ funding, onClose }: { funding: any; onClose: () => void }) {
-  const [activeTab, setActiveTab] = useState<'overview' | 'serviceUsers' | 'payments' | 'documents'>('overview');
+function ViewFundingDetailsModal({ 
+  funding, 
+  onClose,
+  onEdit,
+  onTriggerToast,
+  onViewInvoice
+}: { 
+  funding: any; 
+  onClose: () => void;
+  onEdit: (funding: any) => void;
+  onTriggerToast: (msg: string) => void;
+  onViewInvoice: (ref: string) => void;
+}) {
+  const [activeTab, setActiveTab] = useState<'overview' | 'serviceUsers' | 'payments' | 'documents'>(funding.defaultTab || 'overview');
   
   const monthlyValue = funding.weeklyValue * 4.33;
   const annualValue = funding.weeklyValue * 52;
   
-  // Mock data
-  const linkedServiceUsers = [
+  // Local state for linked service users
+  const [serviceUsers, setServiceUsers] = useState([
     { name: 'Margaret Wilson', type: 'Residential', weeklyRate: 525, startDate: '15 Jan 2025', status: 'active' },
     { name: 'Robert Evans', type: 'Supported Living', weeklyRate: 480, startDate: '1 Mar 2025', status: 'active' },
     { name: 'Patricia Taylor', type: 'Day Services', weeklyRate: 320, startDate: '10 Apr 2024', status: 'active' },
-  ];
+  ]);
+  
+  // Local state for documents
+  const [docs, setDocs] = useState([
+    { name: 'Service Agreement 2024-2027.pdf', type: 'Contract', uploadDate: '1 Apr 2024', size: '2.4 MB' },
+    { name: 'Rate Card June 2026.xlsx', type: 'Rates', uploadDate: '1 Jun 2026', size: '156 KB' },
+    { name: 'Quality Assurance Report.pdf', type: 'Report', uploadDate: '15 May 2026', size: '892 KB' },
+    { name: 'Insurance Certificate.pdf', type: 'Compliance', uploadDate: '1 Jan 2026', size: '245 KB' },
+  ]);
+
+  const [showLinkUserModal, setShowLinkUserModal] = useState(false);
+  const [linkUserForm, setLinkUserForm] = useState({
+    name: '',
+    type: 'Supported Living',
+    weeklyRate: '',
+    startDate: new Date().toISOString().split('T')[0]
+  });
+
+  const handleLinkUserSubmit = () => {
+    if (!linkUserForm.name || !linkUserForm.weeklyRate) return;
+    const newSu = {
+      name: linkUserForm.name,
+      type: linkUserForm.type,
+      weeklyRate: Number(linkUserForm.weeklyRate),
+      startDate: new Date(linkUserForm.startDate).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }),
+      status: 'active'
+    };
+    setServiceUsers(prev => [...prev, newSu]);
+    setShowLinkUserModal(false);
+    setLinkUserForm({ name: '', type: 'Supported Living', weeklyRate: '', startDate: new Date().toISOString().split('T')[0] });
+    onTriggerToast(`Linked service user "${newSu.name}" to funding source.`);
+  };
   
   const paymentHistory = [
     { date: '1 Jun 2026', ref: 'INV-2026-0601', amount: 18200, status: 'paid', paidDate: '15 Jun 2026' },
     { date: '1 May 2026', ref: 'INV-2026-0501', amount: 18200, status: 'paid', paidDate: '14 May 2026' },
     { date: '1 Apr 2026', ref: 'INV-2026-0401', amount: 18200, status: 'paid', paidDate: '20 Apr 2026' },
     { date: '1 Mar 2026', ref: 'INV-2026-0301', amount: 18200, status: 'paid', paidDate: '12 Mar 2026' },
-  ];
-  
-  const documents = [
-    { name: 'Service Agreement 2024-2027.pdf', type: 'Contract', uploadDate: '1 Apr 2024', size: '2.4 MB' },
-    { name: 'Rate Card June 2026.xlsx', type: 'Rates', uploadDate: '1 Jun 2026', size: '156 KB' },
-    { name: 'Quality Assurance Report.pdf', type: 'Report', uploadDate: '15 May 2026', size: '892 KB' },
-    { name: 'Insurance Certificate.pdf', type: 'Compliance', uploadDate: '1 Jan 2026', size: '245 KB' },
   ];
 
   return (
@@ -1166,13 +1372,22 @@ function ViewFundingDetailsModal({ funding, onClose }: { funding: any; onClose: 
 
               {/* Quick Actions */}
               <div className="flex gap-3">
-                <button className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm">
+                <button 
+                  onClick={() => onEdit(funding)}
+                  className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm font-semibold"
+                >
                   <Edit size={14} /> Edit Funding Source
                 </button>
-                <button className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors text-sm">
+                <button 
+                  onClick={() => setShowLinkUserModal(true)}
+                  className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors text-sm font-semibold"
+                >
                   <Plus size={14} /> Add Service User
                 </button>
-                <button className="flex items-center gap-2 px-4 py-2 bg-white border border-gray-200 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors text-sm">
+                <button 
+                  onClick={() => onTriggerToast(`Downloading contract for ${funding.funder}...`)}
+                  className="flex items-center gap-2 px-4 py-2 bg-white border border-gray-200 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors text-sm font-medium"
+                >
                   <Download size={14} /> Download Contract
                 </button>
               </div>
@@ -1183,35 +1398,43 @@ function ViewFundingDetailsModal({ funding, onClose }: { funding: any; onClose: 
           {activeTab === 'serviceUsers' && (
             <div>
               <div className="flex items-center justify-between mb-4">
-                <h3 className="text-sm text-gray-900">{linkedServiceUsers.length} Service Users Funded</h3>
-                <button className="flex items-center gap-2 px-3 py-1.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-xs">
+                <h3 className="text-sm text-gray-900">{serviceUsers.length} Service Users Funded</h3>
+                <button 
+                  onClick={() => setShowLinkUserModal(true)}
+                  className="flex items-center gap-2 px-3 py-1.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-xs font-semibold"
+                >
                   <Plus size={12} /> Link Service User
                 </button>
               </div>
-              <div className="border border-gray-200 rounded-xl overflow-hidden">
-                <table className="w-full">
-                  <thead className="bg-gray-50">
+              <div className="border border-gray-200 rounded-xl overflow-hidden bg-white">
+                <table className="w-full text-left">
+                  <thead className="bg-gray-50 border-b border-gray-250">
                     <tr>
-                      <th className="text-left px-4 py-3 text-xs text-gray-500">Service User</th>
-                      <th className="text-left px-4 py-3 text-xs text-gray-500">Care Type</th>
-                      <th className="text-right px-4 py-3 text-xs text-gray-500">Weekly Rate</th>
-                      <th className="text-left px-4 py-3 text-xs text-gray-500">Start Date</th>
-                      <th className="text-left px-4 py-3 text-xs text-gray-500">Status</th>
-                      <th className="text-left px-4 py-3 text-xs text-gray-500">Actions</th>
+                      <th className="px-4 py-3 text-xs text-gray-500 font-bold">Service User</th>
+                      <th className="px-4 py-3 text-xs text-gray-500 font-bold">Care Type</th>
+                      <th className="px-4 py-3 text-xs text-gray-500 font-bold text-right">Weekly Rate</th>
+                      <th className="px-4 py-3 text-xs text-gray-500 font-bold">Start Date</th>
+                      <th className="px-4 py-3 text-xs text-gray-500 font-bold">Status</th>
+                      <th className="px-4 py-3 text-xs text-gray-500 font-bold">Actions</th>
                     </tr>
                   </thead>
                   <tbody>
-                    {linkedServiceUsers.map((su, i) => (
-                      <tr key={i} className="border-t border-gray-100 hover:bg-gray-50">
-                        <td className="px-4 py-3 text-sm text-gray-900">{su.name}</td>
+                    {serviceUsers.map((su, i) => (
+                      <tr key={i} className="border-b border-gray-100 hover:bg-gray-50/50">
+                        <td className="px-4 py-3 text-sm text-gray-900 font-medium">{su.name}</td>
                         <td className="px-4 py-3 text-sm text-gray-600">{su.type}</td>
-                        <td className="px-4 py-3 text-sm text-gray-900 text-right">{fmt(su.weeklyRate)}</td>
+                        <td className="px-4 py-3 text-sm text-gray-900 text-right font-medium">{fmt(su.weeklyRate)}</td>
                         <td className="px-4 py-3 text-sm text-gray-600">{su.startDate}</td>
                         <td className="px-4 py-3">
-                          <span className="px-2 py-0.5 text-xs bg-green-100 text-green-700 rounded-full">Active</span>
+                          <span className="px-2 py-0.5 text-[10px] bg-green-100 text-green-700 rounded-full font-bold">Active</span>
                         </td>
                         <td className="px-4 py-3">
-                          <button className="text-blue-600 hover:text-blue-700 text-xs">View</button>
+                          <button 
+                            onClick={() => onTriggerToast(`Navigating to service user profile for ${su.name}...`)}
+                            className="text-blue-600 hover:text-blue-700 text-xs font-semibold hover:underline"
+                          >
+                            View
+                          </button>
                         </td>
                       </tr>
                     ))}
@@ -1225,35 +1448,43 @@ function ViewFundingDetailsModal({ funding, onClose }: { funding: any; onClose: 
           {activeTab === 'payments' && (
             <div>
               <div className="flex items-center justify-between mb-4">
-                <h3 className="text-sm text-gray-900">Payment History</h3>
-                <button className="flex items-center gap-2 px-3 py-1.5 bg-white border border-gray-200 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors text-xs">
+                <h3 className="text-sm text-gray-900 font-semibold">Payment History</h3>
+                <button 
+                  onClick={() => onTriggerToast('Payment history exported as CSV.')}
+                  className="flex items-center gap-2 px-3 py-1.5 bg-white border border-gray-200 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors text-xs font-medium"
+                >
                   <Download size={12} /> Export CSV
                 </button>
               </div>
-              <div className="border border-gray-200 rounded-xl overflow-hidden">
-                <table className="w-full">
-                  <thead className="bg-gray-50">
+              <div className="border border-gray-200 rounded-xl overflow-hidden bg-white">
+                <table className="w-full text-left">
+                  <thead className="bg-gray-50 border-b border-gray-250">
                     <tr>
-                      <th className="text-left px-4 py-3 text-xs text-gray-500">Invoice Date</th>
-                      <th className="text-left px-4 py-3 text-xs text-gray-500">Reference</th>
-                      <th className="text-right px-4 py-3 text-xs text-gray-500">Amount</th>
-                      <th className="text-left px-4 py-3 text-xs text-gray-500">Status</th>
-                      <th className="text-left px-4 py-3 text-xs text-gray-500">Paid Date</th>
-                      <th className="text-left px-4 py-3 text-xs text-gray-500">Actions</th>
+                      <th className="px-4 py-3 text-xs text-gray-500 font-bold">Invoice Date</th>
+                      <th className="px-4 py-3 text-xs text-gray-500 font-bold">Reference</th>
+                      <th className="px-4 py-3 text-xs text-gray-500 font-bold text-right">Amount</th>
+                      <th className="px-4 py-3 text-xs text-gray-500 font-bold">Status</th>
+                      <th className="px-4 py-3 text-xs text-gray-500 font-bold">Paid Date</th>
+                      <th className="px-4 py-3 text-xs text-gray-500 font-bold">Actions</th>
                     </tr>
                   </thead>
                   <tbody>
                     {paymentHistory.map((p, i) => (
-                      <tr key={i} className="border-t border-gray-100 hover:bg-gray-50">
+                      <tr key={i} className="border-b border-gray-100 hover:bg-gray-50/50">
                         <td className="px-4 py-3 text-sm text-gray-900">{p.date}</td>
-                        <td className="px-4 py-3 text-sm text-gray-600">{p.ref}</td>
-                        <td className="px-4 py-3 text-sm text-gray-900 text-right">{fmt(p.amount)}</td>
+                        <td className="px-4 py-3 text-sm text-gray-600 font-mono">{p.ref}</td>
+                        <td className="px-4 py-3 text-sm text-gray-900 text-right font-medium">{fmt(p.amount)}</td>
                         <td className="px-4 py-3">
-                          <span className="px-2 py-0.5 text-xs bg-green-100 text-green-700 rounded-full">Paid</span>
+                          <span className="px-2 py-0.5 text-[10px] bg-green-100 text-green-700 rounded-full font-bold">Paid</span>
                         </td>
                         <td className="px-4 py-3 text-sm text-gray-600">{p.paidDate}</td>
                         <td className="px-4 py-3">
-                          <button className="text-blue-600 hover:text-blue-700 text-xs">View Invoice</button>
+                          <button 
+                            onClick={() => onViewInvoice(p.ref)}
+                            className="text-blue-600 hover:text-blue-700 text-xs font-semibold hover:underline"
+                          >
+                            View Invoice
+                          </button>
                         </td>
                       </tr>
                     ))}
@@ -1267,29 +1498,57 @@ function ViewFundingDetailsModal({ funding, onClose }: { funding: any; onClose: 
           {activeTab === 'documents' && (
             <div>
               <div className="flex items-center justify-between mb-4">
-                <h3 className="text-sm text-gray-900">Documents & Contracts</h3>
-                <button className="flex items-center gap-2 px-3 py-1.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-xs">
+                <h3 className="text-sm text-gray-900 font-semibold">Documents & Contracts</h3>
+                <label className="flex items-center gap-2 px-3 py-1.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-xs cursor-pointer font-semibold shadow-sm">
                   <Upload size={12} /> Upload Document
-                </button>
+                  <input 
+                    type="file" 
+                    className="hidden" 
+                    onChange={e => {
+                      const file = e.target.files?.[0];
+                      if (file) {
+                        const sizeStr = file.size > 1024 * 1024 
+                          ? `${(file.size / (1024 * 1024)).toFixed(1)} MB` 
+                          : `${(file.size / 1024).toFixed(0)} KB`;
+                        const newDoc = {
+                          name: file.name,
+                          type: 'Attachment',
+                          uploadDate: new Date().toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }),
+                          size: sizeStr
+                        };
+                        setDocs(prev => [newDoc, ...prev]);
+                        onTriggerToast(`Document "${file.name}" uploaded successfully.`);
+                      }
+                    }}
+                  />
+                </label>
               </div>
               <div className="grid grid-cols-1 gap-3">
-                {documents.map((doc, i) => (
+                {docs.map((doc, i) => (
                   <div key={i} className="flex items-center justify-between p-4 bg-gray-50 border border-gray-200 rounded-xl hover:bg-gray-100 transition-colors">
                     <div className="flex items-center gap-3">
                       <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center">
                         <FileText size={18} className="text-blue-600" />
                       </div>
                       <div>
-                        <div className="text-sm text-gray-900">{doc.name}</div>
+                        <div className="text-sm text-gray-900 font-medium">{doc.name}</div>
                         <div className="text-xs text-gray-500">{doc.type} • {doc.uploadDate} • {doc.size}</div>
                       </div>
                     </div>
                     <div className="flex items-center gap-2">
-                      <button className="p-2 hover:bg-white rounded-lg transition-colors">
-                        <Eye size={14} className="text-gray-600" />
+                      <button 
+                        onClick={() => onTriggerToast(`Viewing document: ${doc.name}`)}
+                        className="p-2 hover:bg-white rounded-lg transition-colors border border-gray-150 text-gray-600 hover:text-blue-600"
+                        title="View"
+                      >
+                        <Eye size={14} />
                       </button>
-                      <button className="p-2 hover:bg-white rounded-lg transition-colors">
-                        <Download size={14} className="text-gray-600" />
+                      <button 
+                        onClick={() => onTriggerToast(`Downloading document: ${doc.name}`)}
+                        className="p-2 hover:bg-white rounded-lg transition-colors border border-gray-150 text-gray-600 hover:text-green-600"
+                        title="Download"
+                      >
+                        <Download size={14} />
                       </button>
                     </div>
                   </div>
@@ -1299,8 +1558,83 @@ function ViewFundingDetailsModal({ funding, onClose }: { funding: any; onClose: 
           )}
         </div>
 
+        {/* Link Service User Dialog Overlay */}
+        {showLinkUserModal && (
+          <div className="fixed inset-0 bg-gray-900/40 flex items-center justify-center z-[60] p-4">
+            <div className="bg-white rounded-2xl shadow-2xl w-full max-w-sm mx-auto overflow-hidden">
+              <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100 bg-gray-50/50">
+                <h3 className="text-sm font-bold text-gray-950">Link Service User</h3>
+                <button onClick={() => setShowLinkUserModal(false)} className="p-1 hover:bg-gray-100 rounded-lg transition-colors">
+                  <X size={16} className="text-gray-400" />
+                </button>
+              </div>
+              <div className="p-5 space-y-4">
+                <div>
+                  <label className="block text-xs text-gray-500 mb-1 font-semibold">Service User Name *</label>
+                  <select
+                    className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm outline-none focus:border-blue-400 bg-white"
+                    value={linkUserForm.name}
+                    onChange={e => setLinkUserForm(f => ({ ...f, name: e.target.value }))}
+                  >
+                    <option value="">Select service user...</option>
+                    <option>Margaret Wilson</option>
+                    <option>Robert Evans</option>
+                    <option>Patricia Taylor</option>
+                    <option>Daniel Carter</option>
+                    <option>Sophia Martinez</option>
+                    <option>Oliver Parker</option>
+                    <option>Lucas Bennett</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-xs text-gray-500 mb-1 font-semibold">Care Type</label>
+                  <select
+                    className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm outline-none focus:border-blue-400 bg-white"
+                    value={linkUserForm.type}
+                    onChange={e => setLinkUserForm(f => ({ ...f, type: e.target.value }))}
+                  >
+                    <option>Supported Living</option>
+                    <option>Residential</option>
+                    <option>Day Services</option>
+                    <option>Domiciliary Care</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-xs text-gray-500 mb-1 font-semibold">Weekly Rate (£) *</label>
+                  <input
+                    type="number"
+                    placeholder="e.g. 450"
+                    className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm outline-none focus:border-blue-400 font-medium"
+                    value={linkUserForm.weeklyRate}
+                    onChange={e => setLinkUserForm(f => ({ ...f, weeklyRate: e.target.value }))}
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs text-gray-500 mb-1 font-semibold">Start Date</label>
+                  <input
+                    type="date"
+                    className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm outline-none focus:border-blue-400 font-medium"
+                    value={linkUserForm.startDate}
+                    onChange={e => setLinkUserForm(f => ({ ...f, startDate: e.target.value }))}
+                  />
+                </div>
+              </div>
+              <div className="flex justify-end gap-2 px-6 py-4 border-t border-gray-100 bg-gray-50/50">
+                <button onClick={() => setShowLinkUserModal(false)} className="px-3.5 py-1.5 text-xs text-gray-600 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors">Cancel</button>
+                <button
+                  onClick={handleLinkUserSubmit}
+                  disabled={!linkUserForm.name || !linkUserForm.weeklyRate}
+                  className="px-4 py-1.5 text-xs bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed font-semibold"
+                >
+                  Link User
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+        
         <div className="flex justify-end gap-3 px-6 py-4 border-t border-gray-100 bg-gray-50 sticky bottom-0">
-          <button onClick={onClose} className="px-4 py-2 text-sm text-gray-600 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors">
+          <button onClick={onClose} className="px-4 py-2 text-sm text-gray-600 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors font-semibold">
             Close
           </button>
         </div>
@@ -1687,7 +2021,36 @@ export default function Financial() {
   const [showRunPayroll, setShowRunPayroll] = useState(false);
   const [showFundingDetails, setShowFundingDetails] = useState<any>(null);
   const [fundingOptionsMenu, setFundingOptionsMenu] = useState<number | null>(null);
+  const [showAddFundingModal, setShowAddFundingModal] = useState(false);
+  const [showEditFundingModal, setShowEditFundingModal] = useState<any | null>(null);
   const [timeframe, setTimeframe] = useState<TimeframeKey>('this-month');
+  
+  const [fundingList, setFundingList] = useState([
+    { id: 1, funder: 'Bristol City Council', type: 'Local Authority', serviceUsers: 8, weeklyValue: 4200, status: 'active', nextReview: '1 Aug 2026', notes: 'Section 47 placements', contractStart: '1 Apr 2024', contractEnd: '31 Mar 2027', paymentTerms: '30 days', lastInvoice: '1 Jun 2026', trend: '+5%' },
+    { id: 2, funder: 'South Glos NHS Trust', type: 'CHC / NHS', serviceUsers: 4, weeklyValue: 2800, status: 'active', nextReview: '15 Jul 2026', notes: 'Continuing Healthcare', contractStart: '1 Jan 2025', contractEnd: '31 Dec 2026', paymentTerms: '14 days', lastInvoice: '3 Jun 2026', trend: '+2%' },
+    { id: 3, funder: 'Birmingham City Council', type: 'Local Authority', serviceUsers: 5, weeklyValue: 2300, status: 'active', nextReview: '30 Jul 2026', notes: 'Supported living packages', contractStart: '15 Mar 2025', contractEnd: '14 Mar 2028', paymentTerms: '30 days', lastInvoice: '1 Jun 2026', trend: '0%' },
+    { id: 4, funder: 'Private Clients', type: 'Self-funded', serviceUsers: 3, weeklyValue: 1600, status: 'active', nextReview: 'Rolling', notes: 'Domiciliary care', contractStart: 'Various', contractEnd: 'Ongoing', paymentTerms: '7 days', lastInvoice: '8 Jun 2026', trend: '-3%' },
+    { id: 5, funder: 'NHS England', type: 'Block Contract', serviceUsers: 6, weeklyValue: 5100, status: 'active', nextReview: '31 Mar 2027', notes: 'Annual block contract', contractStart: '1 Apr 2026', contractEnd: '31 Mar 2029', paymentTerms: '14 days', lastInvoice: '1 Jun 2026', trend: '+8%' },
+  ]);
+
+  const [toastMessage, setToastMessage] = useState<string | null>(null);
+  const toastTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const triggerToast = (msg: string) => {
+    setToastMessage(msg);
+    if (toastTimer.current) clearTimeout(toastTimer.current);
+    toastTimer.current = setTimeout(() => setToastMessage(null), 3000);
+  };
+
+  const handleViewInvoiceFromRef = (ref: string) => {
+    const inv = invoices.find(i => i.id === ref || i.id.replace('INV-', '') === ref.replace('INV-', ''));
+    if (inv) {
+      setShowViewInvoice(inv);
+    } else {
+      triggerToast(`Invoice details not found for reference ${ref}`);
+    }
+  };
+
   const [customFrom, setCustomFrom] = useState('');
   const [customTo, setCustomTo] = useState('');
   const [showCustomPicker, setShowCustomPicker] = useState(false);
@@ -1742,22 +2105,23 @@ export default function Financial() {
       <Sidebar activeItem="Financial" />
       <TopBar />
 
-      <main className="ml-64 pt-24 px-8 pb-8">
-        {/* Header */}
-        <div className="flex items-center justify-between mb-4">
-          <div>
-            <h1 className="text-3xl text-gray-900">Financial & Billing</h1>
-            <p className="text-sm text-gray-600 mt-1">Invoices, timesheets, payroll exports, and funding management</p>
+      <main className="ml-0 md:ml-64 pt-20 px-4 md:px-8 pb-8 transition-all duration-300">
+        <div className="max-w-[1600px] mx-auto w-full">
+          {/* Header */}
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-4">
+            <div>
+              <h1 className="text-3xl text-gray-900">Financial & Billing</h1>
+              <p className="text-sm text-gray-600 mt-1">Invoices, timesheets, payroll exports, and funding management</p>
+            </div>
+            <div className="flex items-center gap-3">
+              <button className="flex items-center gap-2 px-4 py-2 bg-white border border-gray-200 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors text-sm font-medium">
+                <Download size={16} /> Export
+              </button>
+              <button className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm font-semibold shadow-sm" onClick={() => setShowNewInvoice(true)}>
+                <Plus size={16} /> New Invoice
+              </button>
+            </div>
           </div>
-          <div className="flex items-center gap-3">
-            <button className="flex items-center gap-2 px-4 py-2 bg-white border border-gray-200 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors text-sm">
-              <Download size={16} /> Export
-            </button>
-            <button className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm" onClick={() => setShowNewInvoice(true)}>
-              <Plus size={16} /> New Invoice
-            </button>
-          </div>
-        </div>
 
         {/* Timeframe filter bar */}
         <div className="flex items-center gap-2 mb-6 flex-wrap">
@@ -2192,8 +2556,8 @@ export default function Financial() {
                     <Building2 size={18} className="text-white" />
                   </div>
                   <div>
-                    <div className="text-xs text-blue-700">Active Funders</div>
-                    <div className="text-xl text-blue-900">5</div>
+                    <div className="text-xs text-blue-700 font-semibold">Active Funders</div>
+                    <div className="text-xl text-blue-900 font-bold">{fundingList.filter(f => f.status === 'active').length}</div>
                   </div>
                 </div>
               </Card>
@@ -2203,8 +2567,8 @@ export default function Financial() {
                     <Users size={18} className="text-white" />
                   </div>
                   <div>
-                    <div className="text-xs text-green-700">Funded Service Users</div>
-                    <div className="text-xl text-green-900">26</div>
+                    <div className="text-xs text-green-700 font-semibold">Funded Service Users</div>
+                    <div className="text-xl text-green-900 font-bold">{fundingList.reduce((sum, f) => sum + (f.status === 'active' ? f.serviceUsers : 0), 0)}</div>
                   </div>
                 </div>
               </Card>
@@ -2214,8 +2578,8 @@ export default function Financial() {
                     <PoundSterling size={18} className="text-white" />
                   </div>
                   <div>
-                    <div className="text-xs text-purple-700">Weekly Revenue</div>
-                    <div className="text-xl text-purple-900">{fmt(16000)}</div>
+                    <div className="text-xs text-purple-700 font-semibold">Weekly Revenue</div>
+                    <div className="text-xl text-purple-900 font-bold">{fmt(fundingList.reduce((sum, f) => sum + (f.status === 'active' ? f.weeklyValue : 0), 0))}</div>
                   </div>
                 </div>
               </Card>
@@ -2225,8 +2589,10 @@ export default function Financial() {
                     <Calendar size={18} className="text-white" />
                   </div>
                   <div>
-                    <div className="text-xs text-amber-700">Reviews Due</div>
-                    <div className="text-xl text-amber-900">3</div>
+                    <div className="text-xs text-amber-700 font-semibold">Reviews Due</div>
+                    <div className="text-xl text-amber-900 font-bold">
+                      {fundingList.filter(f => f.status === 'active' && f.nextReview !== 'Rolling' && new Date(f.nextReview) < new Date(Date.now() + 30 * 24 * 60 * 60 * 1000)).length}
+                    </div>
                   </div>
                 </div>
               </Card>
@@ -2234,13 +2600,7 @@ export default function Financial() {
 
             {/* Funding Cards */}
             <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
-              {[
-                { id: 1, funder: 'Bristol City Council', type: 'Local Authority', serviceUsers: 8, weeklyValue: 4200, status: 'active', nextReview: '1 Aug 2026', notes: 'Section 47 placements', contractStart: '1 Apr 2024', contractEnd: '31 Mar 2027', paymentTerms: '30 days', lastInvoice: '1 Jun 2026', trend: '+5%' },
-                { id: 2, funder: 'South Glos NHS Trust', type: 'CHC / NHS', serviceUsers: 4, weeklyValue: 2800, status: 'active', nextReview: '15 Jul 2026', notes: 'Continuing Healthcare', contractStart: '1 Jan 2025', contractEnd: '31 Dec 2026', paymentTerms: '14 days', lastInvoice: '3 Jun 2026', trend: '+2%' },
-                { id: 3, funder: 'Birmingham City Council', type: 'Local Authority', serviceUsers: 5, weeklyValue: 2300, status: 'active', nextReview: '30 Jul 2026', notes: 'Supported living packages', contractStart: '15 Mar 2025', contractEnd: '14 Mar 2028', paymentTerms: '30 days', lastInvoice: '1 Jun 2026', trend: '0%' },
-                { id: 4, funder: 'Private Clients', type: 'Self-funded', serviceUsers: 3, weeklyValue: 1600, status: 'active', nextReview: 'Rolling', notes: 'Domiciliary care', contractStart: 'Various', contractEnd: 'Ongoing', paymentTerms: '7 days', lastInvoice: '8 Jun 2026', trend: '-3%' },
-                { id: 5, funder: 'NHS England', type: 'Block Contract', serviceUsers: 6, weeklyValue: 5100, status: 'active', nextReview: '31 Mar 2027', notes: 'Annual block contract', contractStart: '1 Apr 2026', contractEnd: '31 Mar 2029', paymentTerms: '14 days', lastInvoice: '1 Jun 2026', trend: '+8%' },
-              ].map((f) => {
+              {fundingList.map((f) => {
                 const monthlyValue = f.weeklyValue * 4.33;
                 const annualValue = f.weeklyValue * 52;
                 
@@ -2267,7 +2627,11 @@ export default function Financial() {
                           </div>
                         </div>
                       </div>
-                      <span className="px-2 py-1 text-xs bg-green-100 text-green-700 rounded-full font-medium">Active</span>
+                      <span className={`px-2 py-1 text-xs rounded-full font-bold ${
+                        f.status === 'active' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'
+                      }`}>
+                        {f.status === 'active' ? 'Active' : 'Ended'}
+                      </span>
                     </div>
 
                     {/* Stats Grid */}
@@ -2359,36 +2723,48 @@ export default function Financial() {
                               <button
                                 onClick={() => {
                                   setFundingOptionsMenu(null);
-                                  alert(`Edit ${f.funder}`);
+                                  setShowEditFundingModal(f);
                                 }}
-                                className="w-full flex items-center gap-2 px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
+                                className="w-full flex items-center gap-2 px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 transition-colors font-medium"
                               >
                                 <Edit size={14} /> Edit Funding Source
                               </button>
                               <button
                                 onClick={() => {
                                   setFundingOptionsMenu(null);
-                                  alert(`Renew contract for ${f.funder}`);
+                                  setFundingList(prev => prev.map(item => {
+                                    if (item.id === f.id) {
+                                      const parts = item.contractEnd.split(' ');
+                                      const newYear = parts.length === 3 ? parseInt(parts[2]) + 1 : 2027;
+                                      const endStr = parts.length === 3 ? `${parts[0]} ${parts[1]} ${newYear}` : '31 Mar 2028';
+                                      return {
+                                        ...item,
+                                        contractEnd: endStr
+                                      };
+                                    }
+                                    return item;
+                                  }));
+                                  triggerToast(`Contract for ${f.funder} renewed successfully until next year.`);
                                 }}
-                                className="w-full flex items-center gap-2 px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
+                                className="w-full flex items-center gap-2 px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 transition-colors font-medium"
                               >
                                 <RefreshCw size={14} /> Renew Contract
                               </button>
                               <button
                                 onClick={() => {
                                   setFundingOptionsMenu(null);
-                                  alert(`View invoices for ${f.funder}`);
+                                  setShowFundingDetails({ ...f, defaultTab: 'payments' });
                                 }}
-                                className="w-full flex items-center gap-2 px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
+                                className="w-full flex items-center gap-2 px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 transition-colors font-medium"
                               >
                                 <FileText size={14} /> View Invoices
                               </button>
                               <button
                                 onClick={() => {
                                   setFundingOptionsMenu(null);
-                                  alert(`Download contract for ${f.funder}`);
+                                  triggerToast(`Downloading contract for ${f.funder}...`);
                                 }}
-                                className="w-full flex items-center gap-2 px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
+                                className="w-full flex items-center gap-2 px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 transition-colors font-medium"
                               >
                                 <Download size={14} /> Download Contract
                               </button>
@@ -2396,18 +2772,18 @@ export default function Financial() {
                               <button
                                 onClick={() => {
                                   setFundingOptionsMenu(null);
-                                  alert(`Send reminder to ${f.funder}`);
+                                  triggerToast(`Payment reminder email & SMS sent to ${f.funder}.`);
                                 }}
-                                className="w-full flex items-center gap-2 px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
+                                className="w-full flex items-center gap-2 px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 transition-colors font-medium"
                               >
                                 <Mail size={14} /> Send Payment Reminder
                               </button>
                               <button
                                 onClick={() => {
                                   setFundingOptionsMenu(null);
-                                  alert(`Contact ${f.funder}`);
+                                  triggerToast(`Initiating contact dialing session with ${f.funder} representative...`);
                                 }}
-                                className="w-full flex items-center gap-2 px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
+                                className="w-full flex items-center gap-2 px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 transition-colors font-medium"
                               >
                                 <Phone size={14} /> Contact Funder
                               </button>
@@ -2416,10 +2792,11 @@ export default function Financial() {
                                 onClick={() => {
                                   setFundingOptionsMenu(null);
                                   if (confirm(`Are you sure you want to end the contract with ${f.funder}?`)) {
-                                    alert('Contract ended');
+                                    setFundingList(prev => prev.map(item => item.id === f.id ? { ...item, status: 'inactive' } : item));
+                                    triggerToast(`Contract with ${f.funder} ended.`);
                                   }
                                 }}
-                                className="w-full flex items-center gap-2 px-4 py-2 text-sm text-red-600 hover:bg-red-50 transition-colors"
+                                className="w-full flex items-center gap-2 px-4 py-2 text-sm text-red-600 hover:bg-red-50 transition-colors font-medium"
                               >
                                 <XCircle size={14} /> End Contract
                               </button>
@@ -2441,8 +2818,8 @@ export default function Financial() {
             {/* Add New Funder Button */}
             <div className="flex justify-center pt-4">
               <button 
-                onClick={() => alert('Add new funding source')}
-                className="flex items-center gap-2 px-6 py-3 bg-white border-2 border-dashed border-gray-300 text-gray-600 rounded-xl hover:border-blue-400 hover:text-blue-600 hover:bg-blue-50 transition-colors"
+                onClick={() => setShowAddFundingModal(true)}
+                className="flex items-center gap-2 px-6 py-3 bg-white border-2 border-dashed border-gray-300 text-gray-600 rounded-xl hover:border-blue-400 hover:text-blue-600 hover:bg-blue-50 transition-colors font-semibold shadow-sm"
               >
                 <Plus size={16} /> Add New Funding Source
               </button>
@@ -2451,9 +2828,10 @@ export default function Financial() {
         )}
 
         <div className="text-center py-6 text-xs text-gray-400 border-t border-gray-100 mt-8">
-          MpoweredCare © 2025 — Internal Use Only
+          Powered by MployUs
         </div>
-      </main>
+      </div>
+    </main>
 
       {showNewInvoice && (
         <NewInvoiceModal onClose={() => setShowNewInvoice(false)} />
@@ -2501,7 +2879,41 @@ export default function Financial() {
         <ViewFundingDetailsModal 
           funding={showFundingDetails}
           onClose={() => setShowFundingDetails(null)}
+          onEdit={(f) => {
+            setShowFundingDetails(null);
+            setShowEditFundingModal(f);
+          }}
+          onTriggerToast={triggerToast}
+          onViewInvoice={handleViewInvoiceFromRef}
         />
+      )}
+
+      {showAddFundingModal && (
+        <FundingModal 
+          onClose={() => setShowAddFundingModal(false)}
+          onSave={(data) => {
+            setFundingList(prev => [...prev, data]);
+            triggerToast(`Funding source "${data.funder}" added successfully.`);
+          }}
+        />
+      )}
+
+      {showEditFundingModal && (
+        <FundingModal 
+          initial={showEditFundingModal}
+          onClose={() => setShowEditFundingModal(null)}
+          onSave={(data) => {
+            setFundingList(prev => prev.map(item => item.id === data.id ? { ...item, ...data } : item));
+            triggerToast(`Funding source "${data.funder}" updated successfully.`);
+          }}
+        />
+      )}
+
+      {toastMessage && (
+        <div className="fixed bottom-6 right-6 z-50 flex items-center gap-2 bg-gray-900 text-white px-4 py-3 rounded-xl shadow-xl text-sm font-medium animate-bounce">
+          <CheckCircle size={15} className="text-green-400" />
+          {toastMessage}
+        </div>
       )}
     </div>
   );

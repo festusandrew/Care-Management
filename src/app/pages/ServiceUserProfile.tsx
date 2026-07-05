@@ -52,7 +52,8 @@ import {
   Timer,
   X,
   Save,
-  ChevronDown
+  ChevronDown,
+  Archive
 } from 'lucide-react';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 
@@ -81,6 +82,10 @@ export function ServiceUserProfile({ userId, onBack }: ServiceUserProfileProps) 
     { id: 2, visitorName: 'Robert Johnson', relation: 'Father', date: '5 Jun 2026',  timeIn: '10:00', timeOut: '12:00', hours: 2.0, purpose: 'Family visit',          signedInBy: 'John Davies',    notes: '' },
     { id: 3, visitorName: 'Anna Clarke',    relation: 'Aunt',   date: '28 May 2026', timeIn: '15:30', timeOut: '17:00', hours: 1.5, purpose: 'Birthday celebration',  signedInBy: 'Mary Thompson',  notes: 'Brought birthday gifts. Very cheerful visit.' },
     { id: 4, visitorName: 'Jane Johnson',   relation: 'Mother', date: '22 May 2026', timeIn: '13:00', timeOut: '15:30', hours: 2.5, purpose: 'Support visit',         signedInBy: 'Sarah Williams', notes: 'Discussed care plan progress with staff.' },
+    { id: 5, visitorName: 'Robert Johnson', relation: 'Father', date: '10 May 2026', timeIn: '11:00', timeOut: '13:30', hours: 2.5, purpose: 'Family visit',          signedInBy: 'John Davies',    notes: 'Brought new clothes and books.' },
+    { id: 6, visitorName: 'Jane Johnson',   relation: 'Mother', date: '2 May 2026',  timeIn: '14:30', timeOut: '16:00', hours: 1.5, purpose: 'Support visit',         signedInBy: 'Mary Thompson',  notes: 'Attended key-worker review meeting.' },
+    { id: 7, visitorName: 'Anna Clarke',    relation: 'Aunt',   date: '18 Apr 2026', timeIn: '12:00', timeOut: '14:00', hours: 2.0, purpose: 'Family visit',          signedInBy: 'Sarah Williams', notes: '' },
+    { id: 8, visitorName: 'Jane Johnson',   relation: 'Mother', date: '5 Apr 2026',  timeIn: '15:00', timeOut: '17:30', hours: 2.5, purpose: 'Family visit',          signedInBy: 'John Davies',    notes: 'Easter weekend visit. Brought flowers and a card.' },
   ]);
 
   const calcHours = (timeIn: string, timeOut: string) => {
@@ -258,11 +263,34 @@ export function ServiceUserProfile({ userId, onBack }: ServiceUserProfileProps) 
     { id: 5, date: '21 Feb 2026', time: '09:00', type: 'Daily Log', mood: 'happy', behavior: 'Cheerful', notes: 'Good morning routine. Engaged well at breakfast with peers.', staff: 'Mary Thompson' },
   ];
 
-  const upcomingAppointments = [
-    { id: 1, type: 'Psychiatric Review', date: '28 Feb 2026', time: '10:00', with: 'Dr. Emily Carter', location: 'Medical Room' },
-    { id: 2, type: 'Therapy Session', date: '26 Feb 2026', time: '14:00', with: 'Sarah Williams', location: 'Therapy Room 2' },
-    { id: 3, type: 'Educational Assessment', date: '3 Mar 2026', time: '09:30', with: 'James Mitchell', location: 'Learning Centre' },
-  ];
+  const [upcomingAppointments, setUpcomingAppointments] = useState([
+    { id: 1, type: 'Psychiatric Review',        date: '28 Feb 2026', time: '10:00', with: 'Dr. Emily Carter', location: 'Medical Room',      color: 'blue' },
+    { id: 2, type: 'Therapy Session',           date: '26 Feb 2026', time: '14:00', with: 'Sarah Williams',   location: 'Therapy Room 2',   color: 'purple' },
+    { id: 3, type: 'Educational Assessment',    date: '3 Mar 2026',  time: '09:30', with: 'James Mitchell',   location: 'Learning Centre',  color: 'emerald' },
+    { id: 4, type: 'Medication Review',         date: '10 Mar 2026', time: '11:00', with: 'Dr. Emily Carter', location: 'Medical Room',      color: 'blue' },
+    { id: 5, type: 'LAC Review',                date: '15 Mar 2026', time: '14:30', with: 'Rebecca Holmes',   location: 'Conference Room',  color: 'amber' },
+    { id: 6, type: 'Dentist Appointment',       date: '22 Mar 2026', time: '09:00', with: 'Dr. C. Patel',     location: 'Dental Clinic',    color: 'rose' },
+  ]);
+
+  // Visit Log pagination & filter state
+  const VISIT_PER_PAGE = 3;
+  const [visitPage, setVisitPage] = useState(1);
+  const [visitFilter, setVisitFilter] = useState({ visitor: '', relation: '', purpose: '', from: '', to: '' });
+
+  const filteredVisits = visitLogs.filter(v => {
+    if (visitFilter.visitor  && !v.visitorName.toLowerCase().includes(visitFilter.visitor.toLowerCase()))  return false;
+    if (visitFilter.relation && !v.relation.toLowerCase().includes(visitFilter.relation.toLowerCase()))    return false;
+    if (visitFilter.purpose  && visitFilter.purpose !== v.purpose)                                         return false;
+    return true;
+  });
+  const totalVisitPages = Math.max(1, Math.ceil(filteredVisits.length / VISIT_PER_PAGE));
+  const pagedVisits    = filteredVisits.slice((visitPage - 1) * VISIT_PER_PAGE, visitPage * VISIT_PER_PAGE);
+
+  // Upcoming appointments pagination
+  const APT_PER_PAGE = 3;
+  const [aptPage, setAptPage] = useState(1);
+  const totalAptPages = Math.max(1, Math.ceil(upcomingAppointments.length / APT_PER_PAGE));
+  const pagedApts     = upcomingAppointments.slice((aptPage - 1) * APT_PER_PAGE, aptPage * APT_PER_PAGE);
 
   const recentIncidents = [
     { id: 1, date: '18 Feb 2026', time: '19:45', severity: 'amber' as const, type: 'Anxiety Episode', description: 'Experienced anxiety attack during evening routine. Staff provided support and calming techniques.', actionTaken: 'One-on-one support provided. Care manager notified.', staff: 'John Davies', reference: 'INC-2026-042' },
@@ -339,12 +367,26 @@ export function ServiceUserProfile({ userId, onBack }: ServiceUserProfileProps) 
     setShowUploadDoc(false);
   };
 
-  const careNotes = [
-    { id: 1, date: '24 Feb 2026', time: '16:00', author: 'Mary Thompson', role: 'Key Worker', note: 'Sarah had an excellent day today. She engaged well in all activities and was supportive of her peers during group work. Continued positive progress with social skills.', type: 'General' },
-    { id: 2, date: '22 Feb 2026', time: '10:30', author: 'Dr. Emily Carter', role: 'Care Manager', note: 'Reviewed care plan progress. Sarah is meeting most targets. Recommend continuing current approach with additional focus on anxiety management techniques.', type: 'Review' },
-    { id: 3, date: '20 Feb 2026', time: '14:15', author: 'Sarah Williams', role: 'Therapist', note: 'Therapy session focused on cognitive behavioural techniques for managing anxiety triggers. Sarah showed good engagement and understanding.', type: 'Therapy' },
-    { id: 4, date: '18 Feb 2026', time: '20:00', author: 'John Davies', role: 'Support Worker', note: 'Following anxiety episode, Sarah responded well to grounding techniques. She was able to self-regulate after 15 minutes with support.', type: 'Incident Follow-up' },
-  ];
+  const [notes, setNotes] = useState([
+    { id: 1, date: '24 Feb 2026', time: '16:00', author: 'Mary Thompson', role: 'Key Worker', note: 'Sarah had an excellent day today. She engaged well in all activities and was supportive of her peers during group work. Continued positive progress with social skills.', type: 'General', archived: false },
+    { id: 2, date: '22 Feb 2026', time: '10:30', author: 'Dr. Emily Carter', role: 'Care Manager', note: 'Reviewed care plan progress. Sarah is meeting most targets. Recommend continuing current approach with additional focus on anxiety management techniques.', type: 'Review', archived: false },
+    { id: 3, date: '20 Feb 2026', time: '14:15', author: 'Sarah Williams', role: 'Therapist', note: 'Therapy session focused on cognitive behavioural techniques for managing anxiety triggers. Sarah showed good engagement and understanding.', type: 'Therapy', archived: false },
+    { id: 4, date: '18 Feb 2026', time: '20:00', author: 'John Davies', role: 'Support Worker', note: 'Following anxiety episode, Sarah responded well to grounding techniques. She was able to self-regulate after 15 minutes with support.', type: 'Incident Follow-up', archived: false },
+  ]);
+
+  const [showAddNote, setShowAddNote] = useState(false);
+  const [showEditNote, setShowEditNote] = useState(false);
+  const [selectedNote, setSelectedNote] = useState<any>(null);
+  const [noteForm, setNoteForm] = useState({ note: '', type: 'General', author: 'Mary Thompson', role: 'Key Worker' });
+  const [showArchived, setShowArchived] = useState(false);
+
+  const getFormattedDateTime = () => {
+    const now = new Date();
+    const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    const dateStr = `${now.getDate()} ${months[now.getMonth()]} ${now.getFullYear()}`;
+    const timeStr = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
+    return { date: dateStr, time: timeStr };
+  };
 
   const getMoodIcon = (mood: string) => {
     switch (mood) {
@@ -387,18 +429,19 @@ export function ServiceUserProfile({ userId, onBack }: ServiceUserProfileProps) 
       <Sidebar activeItem="Service Users" />
       <TopBar />
 
-      <main className="ml-64 pt-24 px-8 pb-8">
-        {/* Back Button */}
-        <button onClick={onBack} className="flex items-center gap-2 text-sm text-gray-500 hover:text-gray-700 mb-5 transition-colors">
-          <ArrowLeft size={16} />
-          Back to Service Users
-        </button>
+      <main className="ml-0 md:ml-64 pt-20 px-4 md:px-8 pb-8 transition-all duration-300">
+        <div className="max-w-[1600px] mx-auto w-full">
+          {/* Back Button */}
+          <button onClick={onBack} className="flex items-center gap-2 text-sm text-gray-500 hover:text-gray-700 mb-5 transition-colors">
+            <ArrowLeft size={16} />
+            Back to Service Users
+          </button>
 
-        {/* ===== PROFILE HEADER CARD ===== */}
-        <div className="bg-white rounded-xl border border-gray-100 p-6 mb-6">
-          <div className="flex items-start justify-between">
-            {/* Left: Avatar + Info */}
-            <div className="flex items-start gap-5">
+          {/* ===== PROFILE HEADER CARD ===== */}
+          <div className="bg-white rounded-xl border border-gray-100 p-6 mb-6">
+            <div className="flex flex-col lg:flex-row lg:items-start justify-between gap-6">
+              {/* Left: Avatar + Info */}
+              <div className="flex flex-col sm:flex-row items-start gap-5">
               <div className="w-20 h-20 rounded-2xl bg-emerald-500 flex items-center justify-center text-white text-2xl shrink-0">
                 {user.photo}
               </div>
@@ -595,41 +638,87 @@ export function ServiceUserProfile({ userId, onBack }: ServiceUserProfileProps) 
               </div>
             </div>
 
-            {/* Visitor Log */}
+            {/* ── Visitor Log ── */}
             <div className="bg-white rounded-xl border border-gray-100 p-5">
-              <div className="flex items-center justify-between mb-5">
+              {/* Header */}
+              <div className="flex items-center justify-between mb-4">
                 <div className="flex items-center gap-2">
                   <LogIn size={16} className="text-gray-500" />
                   <h3 className="text-sm text-gray-900">Visitor Log</h3>
-                  <span className="text-xs bg-gray-100 text-gray-600 px-2 py-0.5 rounded-full">{visitLogs.length} visits</span>
+                  <span className="text-xs bg-gray-100 text-gray-600 px-2 py-0.5 rounded-full">{visitLogs.length} total</span>
                 </div>
                 <button
                   onClick={() => setShowLogVisit(true)}
-                  className="flex items-center gap-1.5 px-3 py-1.5 text-xs bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+                  className="flex items-center gap-1.5 px-3 py-1.5 text-xs bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition-colors font-medium shadow-sm"
                 >
                   <Plus size={13} /> Log Visit
                 </button>
               </div>
 
               {/* Summary strip */}
-              <div className="grid grid-cols-3 gap-3 mb-5">
+              <div className="grid grid-cols-3 gap-3 mb-4">
                 {[
-                  { label: 'Total Visits', value: visitLogs.length, color: 'text-blue-600', bg: 'bg-blue-50' },
-                  { label: 'Total Hours', value: `${visitLogs.reduce((s, v) => s + v.hours, 0)}h`, color: 'text-purple-600', bg: 'bg-purple-50' },
-                  { label: 'Last Visit', value: visitLogs[0]?.date ?? '—', color: 'text-green-600', bg: 'bg-green-50' },
+                  { label: 'Total Visits', value: visitLogs.length, color: 'text-blue-600', bg: 'bg-blue-50', border: 'border-blue-100' },
+                  { label: 'Total Hours', value: `${visitLogs.reduce((s, v) => s + v.hours, 0)}h`, color: 'text-purple-600', bg: 'bg-purple-50', border: 'border-purple-100' },
+                  { label: 'Last Visit', value: visitLogs[0]?.date ?? '—', color: 'text-emerald-600', bg: 'bg-emerald-50', border: 'border-emerald-100' },
                 ].map((s, i) => (
-                  <div key={i} className={`${s.bg} rounded-xl px-4 py-3`}>
+                  <div key={i} className={`${s.bg} border ${s.border} rounded-xl px-4 py-3`}>
                     <div className="text-xs text-gray-500 mb-0.5">{s.label}</div>
-                    <div className={`text-base ${s.color}`}>{s.value}</div>
+                    <div className={`text-base font-medium ${s.color}`}>{s.value}</div>
                   </div>
                 ))}
               </div>
 
+              {/* Filter bar */}
+              <div className="flex flex-wrap items-center gap-2 mb-4 p-3 bg-gray-50 rounded-xl border border-gray-100">
+                <div className="flex items-center gap-1.5 text-xs text-gray-500 shrink-0">
+                  <Eye size={13} className="text-gray-400" /> Filter:
+                </div>
+                <input
+                  type="text"
+                  placeholder="Visitor name..."
+                  value={visitFilter.visitor}
+                  onChange={e => { setVisitFilter(f => ({ ...f, visitor: e.target.value })); setVisitPage(1); }}
+                  className="flex-1 min-w-[120px] px-2.5 py-1.5 text-xs border border-gray-200 rounded-lg bg-white outline-none focus:border-blue-400 focus:ring-1 focus:ring-blue-100 transition-all"
+                />
+                <input
+                  type="text"
+                  placeholder="Relation..."
+                  value={visitFilter.relation}
+                  onChange={e => { setVisitFilter(f => ({ ...f, relation: e.target.value })); setVisitPage(1); }}
+                  className="flex-1 min-w-[100px] px-2.5 py-1.5 text-xs border border-gray-200 rounded-lg bg-white outline-none focus:border-blue-400 focus:ring-1 focus:ring-blue-100 transition-all"
+                />
+                <select
+                  value={visitFilter.purpose}
+                  onChange={e => { setVisitFilter(f => ({ ...f, purpose: e.target.value })); setVisitPage(1); }}
+                  className="flex-1 min-w-[130px] px-2.5 py-1.5 text-xs border border-gray-200 rounded-lg bg-white outline-none focus:border-blue-400 cursor-pointer transition-all"
+                >
+                  <option value="">All purposes</option>
+                  <option>Family visit</option>
+                  <option>Support visit</option>
+                  <option>Birthday / celebration</option>
+                  <option>Medical escort</option>
+                  <option>Legal / advocacy</option>
+                  <option>Other</option>
+                </select>
+                {(visitFilter.visitor || visitFilter.relation || visitFilter.purpose) && (
+                  <button
+                    onClick={() => { setVisitFilter({ visitor: '', relation: '', purpose: '', from: '', to: '' }); setVisitPage(1); }}
+                    className="flex items-center gap-1 px-2.5 py-1.5 text-xs text-gray-500 bg-white border border-gray-200 rounded-lg hover:bg-gray-100 transition-colors"
+                  >
+                    <X size={11} /> Clear
+                  </button>
+                )}
+                {filteredVisits.length !== visitLogs.length && (
+                  <span className="text-xs text-blue-600 bg-blue-50 px-2 py-1 rounded-full">{filteredVisits.length} result{filteredVisits.length !== 1 ? 's' : ''}</span>
+                )}
+              </div>
+
               {/* Log table */}
-              <div className="overflow-x-auto">
+              <div className="overflow-x-auto rounded-xl border border-gray-100">
                 <table className="w-full">
                   <thead>
-                    <tr className="border-b border-gray-100 bg-gray-50/60">
+                    <tr className="border-b border-gray-100 bg-gray-50/80">
                       <th className="text-left px-4 py-2.5 text-xs text-gray-500 uppercase tracking-wide">Visitor</th>
                       <th className="text-left px-4 py-2.5 text-xs text-gray-500 uppercase tracking-wide">Date</th>
                       <th className="text-left px-4 py-2.5 text-xs text-gray-500 uppercase tracking-wide">Time In</th>
@@ -642,12 +731,12 @@ export function ServiceUserProfile({ userId, onBack }: ServiceUserProfileProps) 
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-gray-50">
-                    {visitLogs.map(v => (
-                      <tr key={v.id} className="hover:bg-gray-50 transition-colors group">
+                    {pagedVisits.map(v => (
+                      <tr key={v.id} className="hover:bg-gray-50/70 transition-colors">
                         <td className="px-4 py-3">
                           <div className="flex items-center gap-2.5">
-                            <div className="w-7 h-7 rounded-full bg-purple-100 flex items-center justify-center text-purple-600 text-xs shrink-0">
-                              {v.visitorName.split(' ').map(n => n[0]).join('')}
+                            <div className="w-7 h-7 rounded-full bg-purple-100 flex items-center justify-center text-purple-600 text-xs shrink-0 font-medium">
+                              {v.visitorName.split(' ').map((n: string) => n[0]).join('')}
                             </div>
                             <div>
                               <div className="text-sm text-gray-900">{v.visitorName}</div>
@@ -679,10 +768,38 @@ export function ServiceUserProfile({ userId, onBack }: ServiceUserProfileProps) 
                 </table>
               </div>
 
-              {visitLogs.length === 0 && (
+              {filteredVisits.length === 0 && (
                 <div className="text-center py-10 text-gray-400">
                   <Users size={24} className="mx-auto mb-2 opacity-30" />
-                  <p className="text-sm">No visits recorded yet.</p>
+                  <p className="text-sm">{visitLogs.length === 0 ? 'No visits recorded yet.' : 'No visits match the current filters.'}</p>
+                </div>
+              )}
+
+              {/* Pagination */}
+              {totalVisitPages > 1 && (
+                <div className="flex items-center justify-between pt-3 mt-3 border-t border-gray-100">
+                  <span className="text-xs text-gray-400">
+                    Showing {Math.min((visitPage - 1) * VISIT_PER_PAGE + 1, filteredVisits.length)}–{Math.min(visitPage * VISIT_PER_PAGE, filteredVisits.length)} of {filteredVisits.length} visits
+                  </span>
+                  <div className="flex items-center gap-1">
+                    <button
+                      onClick={() => setVisitPage(p => p - 1)}
+                      disabled={visitPage === 1}
+                      className="p-1.5 rounded-lg text-gray-500 hover:bg-gray-100 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+                    >
+                      <ChevronRight size={14} className="rotate-180" />
+                    </button>
+                    <span className="px-2.5 py-0.5 text-xs bg-emerald-50 text-emerald-700 rounded-md font-semibold min-w-[48px] text-center">
+                      {visitPage} / {totalVisitPages}
+                    </span>
+                    <button
+                      onClick={() => setVisitPage(p => p + 1)}
+                      disabled={visitPage === totalVisitPages}
+                      className="p-1.5 rounded-lg text-gray-500 hover:bg-gray-100 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+                    >
+                      <ChevronRight size={14} />
+                    </button>
+                  </div>
                 </div>
               )}
             </div>
@@ -711,33 +828,79 @@ export function ServiceUserProfile({ userId, onBack }: ServiceUserProfileProps) 
               </ResponsiveContainer>
             </div>
 
-            {/* Upcoming Appointments */}
+            {/* ── Upcoming Appointments ── */}
             <div className="bg-white rounded-xl border border-gray-100 p-5">
               <div className="flex items-center justify-between mb-4">
                 <div className="flex items-center gap-2">
                   <Calendar size={16} className="text-gray-500" />
                   <h3 className="text-sm text-gray-900">Upcoming Appointments</h3>
+                  <span className="text-xs bg-gray-100 text-gray-600 px-2 py-0.5 rounded-full">{upcomingAppointments.length}</span>
                 </div>
-                <button onClick={() => setShowScheduleAppointment(true)} className="text-xs text-blue-600 hover:text-blue-700">
-                  + Schedule
+                <button
+                  onClick={() => setShowScheduleAppointment(true)}
+                  className="flex items-center gap-1.5 px-3 py-1.5 text-xs bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium"
+                >
+                  <Plus size={12} /> Schedule
                 </button>
               </div>
+
               <div className="space-y-2">
-                {upcomingAppointments.map((apt) => (
-                  <div key={apt.id} className="flex items-center justify-between px-4 py-3 bg-gray-50 rounded-lg">
-                    <div className="flex items-center gap-3">
-                      <div className="w-8 h-8 rounded-lg bg-blue-50 flex items-center justify-center">
-                        <Calendar size={14} className="text-blue-600" />
+                {pagedApts.map((apt) => {
+                  const colorMap: Record<string, string> = {
+                    blue:    'bg-blue-50 text-blue-600',
+                    purple:  'bg-purple-50 text-purple-600',
+                    emerald: 'bg-emerald-50 text-emerald-600',
+                    amber:   'bg-amber-50 text-amber-600',
+                    rose:    'bg-rose-50 text-rose-600',
+                  };
+                  const cls = colorMap[apt.color] ?? colorMap['blue'];
+                  return (
+                    <div key={apt.id} className="flex items-center justify-between px-4 py-3 bg-gray-50 rounded-xl border border-gray-100 hover:border-blue-100 hover:bg-blue-50/30 transition-all group">
+                      <div className="flex items-center gap-3">
+                        <div className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 ${cls}`}>
+                          <Calendar size={15} />
+                        </div>
+                        <div>
+                          <div className="text-sm text-gray-900 group-hover:text-blue-700 transition-colors">{apt.type}</div>
+                          <div className="text-xs text-gray-500">{apt.with} · {apt.location}</div>
+                        </div>
                       </div>
-                      <div>
-                        <div className="text-sm text-gray-900">{apt.type}</div>
-                        <div className="text-xs text-gray-500">{apt.with} · {apt.location}</div>
+                      <div className="text-right shrink-0">
+                        <div className="text-xs text-gray-700 font-medium">{apt.date}</div>
+                        <div className="text-xs text-gray-400">{apt.time}</div>
                       </div>
                     </div>
-                    <div className="text-sm text-gray-600">{apt.date} at {apt.time}</div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
+
+              {/* Pagination */}
+              {totalAptPages > 1 && (
+                <div className="flex items-center justify-between pt-3 mt-3 border-t border-gray-100">
+                  <span className="text-xs text-gray-400">
+                    Showing {Math.min((aptPage - 1) * APT_PER_PAGE + 1, upcomingAppointments.length)}–{Math.min(aptPage * APT_PER_PAGE, upcomingAppointments.length)} of {upcomingAppointments.length}
+                  </span>
+                  <div className="flex items-center gap-1">
+                    <button
+                      onClick={() => setAptPage(p => p - 1)}
+                      disabled={aptPage === 1}
+                      className="p-1.5 rounded-lg text-gray-500 hover:bg-gray-100 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+                    >
+                      <ChevronRight size={14} className="rotate-180" />
+                    </button>
+                    <span className="px-2.5 py-0.5 text-xs bg-blue-50 text-blue-700 rounded-md font-semibold min-w-[48px] text-center">
+                      {aptPage} / {totalAptPages}
+                    </span>
+                    <button
+                      onClick={() => setAptPage(p => p + 1)}
+                      disabled={aptPage === totalAptPages}
+                      className="p-1.5 rounded-lg text-gray-500 hover:bg-gray-100 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+                    >
+                      <ChevronRight size={14} />
+                    </button>
+                  </div>
+                </div>
+              )}
             </div>
           </div>
         )}
@@ -1314,28 +1477,76 @@ export function ServiceUserProfile({ userId, onBack }: ServiceUserProfileProps) 
                   <MessageSquare size={16} className="text-gray-500" />
                   <h3 className="text-sm text-gray-900">Care Notes & Activity</h3>
                 </div>
+                <div className="flex items-center gap-3">
+                  <button
+                    onClick={() => setShowArchived(!showArchived)}
+                    className={`px-3 py-1.5 text-xs border rounded-lg transition-colors flex items-center gap-1.5 ${showArchived ? 'bg-amber-50 border-amber-200 text-amber-700 font-medium' : 'bg-white border-gray-200 text-gray-600 hover:bg-gray-50'}`}
+                  >
+                    {showArchived ? 'Show Active' : 'Show Archived'}
+                  </button>
+                  <button
+                    onClick={() => {
+                      setNoteForm({ note: '', type: 'General', author: 'Mary Thompson', role: 'Key Worker' });
+                      setShowAddNote(true);
+                    }}
+                    className="px-3 py-1.5 text-xs bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors flex items-center gap-1 font-medium"
+                  >
+                    <Plus size={14} /> Add Note
+                  </button>
+                </div>
               </div>
               <div className="space-y-3">
-                {careNotes.map((note) => (
-                  <div key={note.id} className="border border-gray-100 rounded-lg p-4">
-                    <div className="flex items-start justify-between mb-2">
-                      <div className="flex items-center gap-2">
-                        <div className="w-7 h-7 rounded-full bg-blue-100 flex items-center justify-center text-xs text-blue-700">
-                          {note.author.split(' ').map(n => n[0]).join('')}
+                {notes
+                  .filter(note => showArchived ? note.archived : !note.archived)
+                  .map((note) => (
+                    <div key={note.id} className={`border rounded-lg p-4 transition-all hover:shadow-sm ${note.archived ? 'border-amber-100 bg-amber-50/20' : 'border-gray-100 bg-white'}`}>
+                      <div className="flex items-start justify-between mb-2">
+                        <div className="flex items-center gap-2">
+                          <div className="w-7 h-7 rounded-full bg-blue-100 flex items-center justify-center text-xs text-blue-700 font-bold">
+                            {note.author.split(' ').map(n => n[0]).join('')}
+                          </div>
+                          <div>
+                            <span className="text-sm font-semibold text-gray-900">{note.author}</span>
+                            <span className="text-xs text-gray-400 ml-2">{note.role}</span>
+                          </div>
                         </div>
-                        <div>
-                          <span className="text-sm text-gray-900">{note.author}</span>
-                          <span className="text-xs text-gray-400 ml-2">{note.role}</span>
+                        <div className="flex items-center gap-3">
+                          <span className="inline-flex items-center px-2 py-0.5 rounded text-xs bg-gray-100 text-gray-600 font-medium">{note.type}</span>
+                          <span className="text-xs text-gray-400">{note.date} at {note.time}</span>
+                          
+                          {/* Actions */}
+                          <div className="flex items-center gap-1.5 ml-2 border-l pl-3 border-gray-100">
+                            <button
+                              onClick={() => {
+                                setSelectedNote(note);
+                                setNoteForm({ note: note.note, type: note.type, author: note.author, role: note.role });
+                                setShowEditNote(true);
+                              }}
+                              className="p-1 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded transition-colors"
+                              title="Edit Note"
+                            >
+                              <Edit size={14} />
+                            </button>
+                            <button
+                              onClick={() => {
+                                setNotes(notes.map(n => n.id === note.id ? { ...n, archived: !n.archived } : n));
+                              }}
+                              className={`p-1 rounded transition-colors ${note.archived ? 'text-blue-600 hover:bg-blue-50' : 'text-gray-400 hover:text-amber-600 hover:bg-amber-50'}`}
+                              title={note.archived ? 'Restore Note' : 'Archive Note'}
+                            >
+                              {note.archived ? <Plus size={14} /> : <Archive size={14} />}
+                            </button>
+                          </div>
                         </div>
                       </div>
-                      <div className="flex items-center gap-2">
-                        <span className="inline-flex items-center px-2 py-0.5 rounded text-xs bg-gray-100 text-gray-600">{note.type}</span>
-                        <span className="text-xs text-gray-400">{note.date} at {note.time}</span>
-                      </div>
+                      <p className="text-sm text-gray-600 leading-relaxed whitespace-pre-wrap">{note.note}</p>
                     </div>
-                    <p className="text-sm text-gray-600 leading-relaxed">{note.note}</p>
+                  ))}
+                {notes.filter(note => showArchived ? note.archived : !note.archived).length === 0 && (
+                  <div className="text-center py-8 text-sm text-gray-400 border border-dashed border-gray-200 rounded-lg bg-gray-50/50">
+                    No {showArchived ? 'archived' : 'active'} notes found.
                   </div>
-                ))}
+                )}
               </div>
             </div>
           </div>
@@ -1343,9 +1554,10 @@ export function ServiceUserProfile({ userId, onBack }: ServiceUserProfileProps) 
 
         {/* Footer */}
         <div className="text-center py-6 text-xs text-gray-400 border-t border-gray-100 mt-8">
-          MpoweredCare © 2026 — Internal Use Only
+          Powered by MployUs
         </div>
-      </main>
+      </div>
+    </main>
 
       {/* Modals */}
       <QuickLogModal isOpen={showQuickLog} onClose={() => setShowQuickLog(false)} userName={user.name} userId={user.id} />
@@ -1353,6 +1565,196 @@ export function ServiceUserProfile({ userId, onBack }: ServiceUserProfileProps) 
       <ScheduleAppointmentModal isOpen={showScheduleAppointment} onClose={() => setShowScheduleAppointment(false)} userName={user.name} />
       <AddMedicationModal isOpen={showAddMedication} onClose={() => setShowAddMedication(false)} userName={user.name} />
       <ReportIncidentModal isOpen={showReportIncident} onClose={() => setShowReportIncident(false)} userName={user.name} />
+
+      {/* ── Add Note Modal ── */}
+      {showAddNote && (
+        <div className="fixed inset-0 bg-gray-900/20 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg mx-auto max-h-[90vh] flex flex-col">
+            <div className="flex items-center gap-3 px-6 py-4 border-b border-gray-100 shrink-0">
+              <div className="w-9 h-9 bg-blue-100 rounded-xl flex items-center justify-center shrink-0">
+                <MessageSquare size={17} className="text-blue-600" />
+              </div>
+              <div className="flex-1">
+                <h2 className="text-base text-gray-900">Add Care Note</h2>
+                <p className="text-xs text-gray-500">{user.name}</p>
+              </div>
+              <button onClick={() => setShowAddNote(false)} className="p-1.5 hover:bg-gray-100 rounded-lg transition-colors">
+                <X size={18} className="text-gray-400" />
+              </button>
+            </div>
+
+            <div className="flex-1 overflow-y-auto px-6 py-5 space-y-4">
+              <div>
+                <label className="block text-xs text-gray-500 mb-1">Author Name *</label>
+                <input
+                  required
+                  type="text"
+                  className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm outline-none focus:border-blue-400 bg-white"
+                  value={noteForm.author}
+                  onChange={e => setNoteForm(f => ({ ...f, author: e.target.value }))}
+                />
+              </div>
+              <div>
+                <label className="block text-xs text-gray-500 mb-1">Author Role *</label>
+                <input
+                  required
+                  type="text"
+                  className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm outline-none focus:border-blue-400 bg-white"
+                  value={noteForm.role}
+                  onChange={e => setNoteForm(f => ({ ...f, role: e.target.value }))}
+                />
+              </div>
+              <div>
+                <label className="block text-xs text-gray-500 mb-1">Note Type *</label>
+                <select
+                  required
+                  className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm outline-none focus:border-blue-400 bg-white"
+                  value={noteForm.type}
+                  onChange={e => setNoteForm(f => ({ ...f, type: e.target.value }))}
+                >
+                  <option>General</option>
+                  <option>Review</option>
+                  <option>Therapy</option>
+                  <option>Incident Follow-up</option>
+                </select>
+              </div>
+              <div>
+                <label className="block text-xs text-gray-500 mb-1">Note Content *</label>
+                <textarea
+                  required
+                  rows={4}
+                  className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm outline-none focus:border-blue-400 bg-white resize-none"
+                  placeholder="Enter details of the note..."
+                  value={noteForm.note}
+                  onChange={e => setNoteForm(f => ({ ...f, note: e.target.value }))}
+                />
+              </div>
+            </div>
+
+            <div className="flex items-center justify-end gap-3 px-6 py-4 border-t border-gray-100 shrink-0 bg-gray-50/50">
+              <button
+                type="button"
+                onClick={() => setShowAddNote(false)}
+                className="px-4 py-2 text-sm border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors bg-white text-gray-700"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                disabled={!noteForm.note || !noteForm.author || !noteForm.role}
+                onClick={() => {
+                  const { date, time } = getFormattedDateTime();
+                  setNotes(prev => [
+                    {
+                      id: Date.now(),
+                      date,
+                      time,
+                      author: noteForm.author,
+                      role: noteForm.role,
+                      note: noteForm.note,
+                      type: noteForm.type,
+                      archived: false
+                    },
+                    ...prev
+                  ]);
+                  setShowAddNote(false);
+                }}
+                className="px-4 py-2 text-sm bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors disabled:opacity-50"
+              >
+                Add Note
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── Edit Note Modal ── */}
+      {showEditNote && selectedNote && (
+        <div className="fixed inset-0 bg-gray-900/20 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg mx-auto max-h-[90vh] flex flex-col">
+            <div className="flex items-center gap-3 px-6 py-4 border-b border-gray-100 shrink-0">
+              <div className="w-9 h-9 bg-blue-100 rounded-xl flex items-center justify-center shrink-0">
+                <MessageSquare size={17} className="text-blue-600" />
+              </div>
+              <div className="flex-1">
+                <h2 className="text-base text-gray-900">Edit Care Note</h2>
+                <p className="text-xs text-gray-500">{user.name}</p>
+              </div>
+              <button onClick={() => setShowEditNote(false)} className="p-1.5 hover:bg-gray-100 rounded-lg transition-colors">
+                <X size={18} className="text-gray-400" />
+              </button>
+            </div>
+
+            <div className="flex-1 overflow-y-auto px-6 py-5 space-y-4">
+              <div>
+                <label className="block text-xs text-gray-500 mb-1">Author Name *</label>
+                <input
+                  required
+                  type="text"
+                  className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm outline-none focus:border-blue-400 bg-white"
+                  value={noteForm.author}
+                  onChange={e => setNoteForm(f => ({ ...f, author: e.target.value }))}
+                />
+              </div>
+              <div>
+                <label className="block text-xs text-gray-500 mb-1">Author Role *</label>
+                <input
+                  required
+                  type="text"
+                  className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm outline-none focus:border-blue-400 bg-white"
+                  value={noteForm.role}
+                  onChange={e => setNoteForm(f => ({ ...f, role: e.target.value }))}
+                />
+              </div>
+              <div>
+                <label className="block text-xs text-gray-500 mb-1">Note Type *</label>
+                <select
+                  required
+                  className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm outline-none focus:border-blue-400 bg-white"
+                  value={noteForm.type}
+                  onChange={e => setNoteForm(f => ({ ...f, type: e.target.value }))}
+                >
+                  <option>General</option>
+                  <option>Review</option>
+                  <option>Therapy</option>
+                  <option>Incident Follow-up</option>
+                </select>
+              </div>
+              <div>
+                <label className="block text-xs text-gray-500 mb-1">Note Content *</label>
+                <textarea
+                  required
+                  rows={4}
+                  className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm outline-none focus:border-blue-400 bg-white resize-none"
+                  value={noteForm.note}
+                  onChange={e => setNoteForm(f => ({ ...f, note: e.target.value }))}
+                />
+              </div>
+            </div>
+
+            <div className="flex items-center justify-end gap-3 px-6 py-4 border-t border-gray-100 shrink-0 bg-gray-50/50">
+              <button
+                type="button"
+                onClick={() => setShowEditNote(false)}
+                className="px-4 py-2 text-sm border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors bg-white text-gray-700"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                disabled={!noteForm.note || !noteForm.author || !noteForm.role}
+                onClick={() => {
+                  setNotes(prev => prev.map(n => n.id === selectedNote.id ? { ...n, author: noteForm.author, role: noteForm.role, note: noteForm.note, type: noteForm.type } : n));
+                  setShowEditNote(false);
+                }}
+                className="px-4 py-2 text-sm bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors disabled:opacity-50"
+              >
+                Save Changes
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* ── Create Care Plan Modal ── */}
       {showCreateCarePlan && (
@@ -1896,141 +2298,214 @@ export function ServiceUserProfile({ userId, onBack }: ServiceUserProfileProps) 
         </div>
       )}
 
-      {/* ── Log Visit Modal ── */}
+      {/* ── Log Visit Modal (polished) ── */}
       {showLogVisit && (
-        <div className="fixed inset-0 bg-gray-900/20 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg mx-auto">
-            <div className="flex items-center gap-3 px-6 py-4 border-b border-gray-100">
-              <div className="w-9 h-9 bg-purple-100 rounded-xl flex items-center justify-center shrink-0">
-                <LogIn size={17} className="text-purple-600" />
+        <div className="fixed inset-0 bg-black/30 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-xl mx-auto flex flex-col max-h-[90vh]">
+
+            {/* Modal Header */}
+            <div className="flex items-center gap-3 px-6 py-4 border-b border-gray-100 shrink-0">
+              <div className="w-10 h-10 bg-gradient-to-br from-purple-500 to-indigo-600 rounded-xl flex items-center justify-center shrink-0 shadow-sm">
+                <LogIn size={18} className="text-white" />
               </div>
               <div className="flex-1">
                 <h2 className="text-base text-gray-900">Log a Visit</h2>
-                <p className="text-xs text-gray-500">{user.name}</p>
+                <p className="text-xs text-gray-500">Recording visit for <span className="text-gray-700">{user.name}</span></p>
               </div>
-              <button onClick={() => setShowLogVisit(false)} className="p-1.5 hover:bg-gray-100 rounded-lg transition-colors">
+              <button
+                onClick={() => { setShowLogVisit(false); setVisitForm({ visitorName: '', relation: '', date: '', timeIn: '', timeOut: '', purpose: '', signedInBy: '', notes: '' }); }}
+                className="p-1.5 hover:bg-gray-100 rounded-lg transition-colors"
+              >
                 <X size={18} className="text-gray-400" />
               </button>
             </div>
 
-            <div className="px-6 py-5 space-y-4">
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-xs text-gray-500 mb-1">Visitor Name *</label>
-                  <select
-                    className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm outline-none focus:border-blue-400 bg-white"
-                    value={visitForm.visitorName}
-                    onChange={e => {
-                      const v = user.visitors.find(v => v.name === e.target.value);
-                      setVisitForm(f => ({ ...f, visitorName: e.target.value, relation: v?.relation ?? f.relation }));
-                    }}
-                  >
-                    <option value="">Select visitor...</option>
-                    {user.visitors.map(v => <option key={v.name} value={v.name}>{v.name}</option>)}
-                    <option value="__other__">Other (not on approved list)</option>
-                  </select>
+            {/* Scrollable body */}
+            <div className="px-6 py-5 space-y-5 overflow-y-auto">
+
+              {/* Section: Visitor */}
+              <div>
+                <div className="flex items-center gap-2 mb-3">
+                  <div className="w-5 h-5 bg-purple-100 rounded flex items-center justify-center text-purple-600 text-xs font-bold">1</div>
+                  <span className="text-xs font-semibold text-gray-700 uppercase tracking-wide">Visitor Details</span>
                 </div>
-                <div>
-                  <label className="block text-xs text-gray-500 mb-1">Relationship</label>
-                  <input
-                    type="text"
-                    className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm outline-none focus:border-blue-400"
-                    placeholder="e.g. Mother"
-                    value={visitForm.relation}
-                    onChange={e => setVisitForm(f => ({ ...f, relation: e.target.value }))}
-                  />
-                </div>
-                <div>
-                  <label className="block text-xs text-gray-500 mb-1">Date *</label>
-                  <input
-                    type="date"
-                    className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm outline-none focus:border-blue-400"
-                    value={visitForm.date}
-                    onChange={e => setVisitForm(f => ({ ...f, date: e.target.value }))}
-                  />
-                </div>
-                <div>
-                  <label className="block text-xs text-gray-500 mb-1">Purpose of Visit</label>
-                  <select
-                    className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm outline-none focus:border-blue-400 bg-white"
-                    value={visitForm.purpose}
-                    onChange={e => setVisitForm(f => ({ ...f, purpose: e.target.value }))}
-                  >
-                    <option value="">Select...</option>
-                    <option>Family visit</option>
-                    <option>Support visit</option>
-                    <option>Birthday / celebration</option>
-                    <option>Medical escort</option>
-                    <option>Legal / advocacy</option>
-                    <option>Other</option>
-                  </select>
-                </div>
-                <div>
-                  <label className="block text-xs text-gray-500 mb-1">Time In *</label>
-                  <input
-                    type="time"
-                    className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm outline-none focus:border-blue-400"
-                    value={visitForm.timeIn}
-                    onChange={e => setVisitForm(f => ({ ...f, timeIn: e.target.value }))}
-                  />
-                </div>
-                <div>
-                  <label className="block text-xs text-gray-500 mb-1">Time Out *</label>
-                  <input
-                    type="time"
-                    className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm outline-none focus:border-blue-400"
-                    value={visitForm.timeOut}
-                    onChange={e => setVisitForm(f => ({ ...f, timeOut: e.target.value }))}
-                  />
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="col-span-2">
+                    <label className="block text-xs text-gray-500 mb-1">Visitor Name <span className="text-red-400">*</span></label>
+                    <select
+                      className="w-full px-3 py-2.5 border border-gray-200 rounded-xl text-sm outline-none focus:border-purple-400 focus:ring-2 focus:ring-purple-50 bg-white transition-all"
+                      value={visitForm.visitorName}
+                      onChange={e => {
+                        const v = user.visitors.find(v => v.name === e.target.value);
+                        setVisitForm(f => ({ ...f, visitorName: e.target.value, relation: v?.relation ?? f.relation }));
+                      }}
+                    >
+                      <option value="">Select approved visitor...</option>
+                      {user.visitors.map(v => <option key={v.name} value={v.name}>{v.name} — {v.relation}</option>)}
+                      <option value="__other__">Other (walk-in / unregistered)</option>
+                    </select>
+                  </div>
+                  {(visitForm.visitorName === '__other__' || !user.visitors.find(v => v.name === visitForm.visitorName)) && (
+                    <div className="col-span-2">
+                      <label className="block text-xs text-gray-500 mb-1">Full Name <span className="text-red-400">*</span></label>
+                      <input
+                        type="text"
+                        className="w-full px-3 py-2.5 border border-gray-200 rounded-xl text-sm outline-none focus:border-purple-400 focus:ring-2 focus:ring-purple-50 transition-all"
+                        placeholder="Visitor's full name"
+                        value={visitForm.visitorName === '__other__' ? '' : visitForm.visitorName}
+                        onChange={e => setVisitForm(f => ({ ...f, visitorName: e.target.value }))}
+                      />
+                    </div>
+                  )}
+                  <div>
+                    <label className="block text-xs text-gray-500 mb-1">Relationship</label>
+                    <input
+                      type="text"
+                      className="w-full px-3 py-2.5 border border-gray-200 rounded-xl text-sm outline-none focus:border-purple-400 focus:ring-2 focus:ring-purple-50 transition-all"
+                      placeholder="e.g. Mother, Friend"
+                      value={visitForm.relation}
+                      onChange={e => setVisitForm(f => ({ ...f, relation: e.target.value }))}
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs text-gray-500 mb-1">Purpose of Visit</label>
+                    <select
+                      className="w-full px-3 py-2.5 border border-gray-200 rounded-xl text-sm outline-none focus:border-purple-400 focus:ring-2 focus:ring-purple-50 bg-white transition-all"
+                      value={visitForm.purpose}
+                      onChange={e => setVisitForm(f => ({ ...f, purpose: e.target.value }))}
+                    >
+                      <option value="">Select purpose...</option>
+                      <option>Family visit</option>
+                      <option>Support visit</option>
+                      <option>Birthday / celebration</option>
+                      <option>Medical escort</option>
+                      <option>Legal / advocacy</option>
+                      <option>Other</option>
+                    </select>
+                  </div>
                 </div>
               </div>
 
-              {/* Hours preview */}
-              {visitForm.timeIn && visitForm.timeOut && (
-                <div className="flex items-center gap-2 text-xs text-purple-700 bg-purple-50 border border-purple-100 rounded-lg px-3 py-2">
-                  <Timer size={13} />
-                  Duration: <span className="font-medium">{calcHours(visitForm.timeIn, visitForm.timeOut)} hours</span>
-                </div>
-              )}
+              {/* Divider */}
+              <div className="border-t border-dashed border-gray-100" />
 
+              {/* Section: Time & Date */}
               <div>
-                <label className="block text-xs text-gray-500 mb-1">Signed In By</label>
-                <select
-                  className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm outline-none focus:border-blue-400 bg-white"
-                  value={visitForm.signedInBy}
-                  onChange={e => setVisitForm(f => ({ ...f, signedInBy: e.target.value }))}
+                <div className="flex items-center gap-2 mb-3">
+                  <div className="w-5 h-5 bg-blue-100 rounded flex items-center justify-center text-blue-600 text-xs font-bold">2</div>
+                  <span className="text-xs font-semibold text-gray-700 uppercase tracking-wide">Time &amp; Date</span>
+                </div>
+                <div className="grid grid-cols-3 gap-3">
+                  <div className="col-span-3 sm:col-span-1">
+                    <label className="block text-xs text-gray-500 mb-1">Date <span className="text-red-400">*</span></label>
+                    <input
+                      type="date"
+                      className="w-full px-3 py-2.5 border border-gray-200 rounded-xl text-sm outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-50 transition-all"
+                      value={visitForm.date}
+                      onChange={e => setVisitForm(f => ({ ...f, date: e.target.value }))}
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs text-gray-500 mb-1">Time In <span className="text-red-400">*</span></label>
+                    <input
+                      type="time"
+                      className="w-full px-3 py-2.5 border border-gray-200 rounded-xl text-sm outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-50 transition-all"
+                      value={visitForm.timeIn}
+                      onChange={e => setVisitForm(f => ({ ...f, timeIn: e.target.value }))}
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs text-gray-500 mb-1">Time Out <span className="text-red-400">*</span></label>
+                    <input
+                      type="time"
+                      className="w-full px-3 py-2.5 border border-gray-200 rounded-xl text-sm outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-50 transition-all"
+                      value={visitForm.timeOut}
+                      onChange={e => setVisitForm(f => ({ ...f, timeOut: e.target.value }))}
+                    />
+                  </div>
+                </div>
+
+                {/* Live duration pill */}
+                {visitForm.timeIn && visitForm.timeOut && calcHours(visitForm.timeIn, visitForm.timeOut) > 0 && (
+                  <div className="flex items-center gap-2 mt-3 text-sm text-purple-700 bg-purple-50 border border-purple-100 rounded-xl px-4 py-2.5">
+                    <Timer size={14} className="text-purple-400 shrink-0" />
+                    <span>Visit duration: <strong>{calcHours(visitForm.timeIn, visitForm.timeOut)} hour{calcHours(visitForm.timeIn, visitForm.timeOut) !== 1 ? 's' : ''}</strong></span>
+                  </div>
+                )}
+                {visitForm.timeIn && visitForm.timeOut && calcHours(visitForm.timeIn, visitForm.timeOut) <= 0 && (
+                  <div className="flex items-center gap-2 mt-3 text-sm text-red-600 bg-red-50 border border-red-100 rounded-xl px-4 py-2.5">
+                    <AlertCircle size={14} className="shrink-0" />
+                    <span>Time Out must be after Time In</span>
+                  </div>
+                )}
+              </div>
+
+              {/* Divider */}
+              <div className="border-t border-dashed border-gray-100" />
+
+              {/* Section: Staff & Notes */}
+              <div>
+                <div className="flex items-center gap-2 mb-3">
+                  <div className="w-5 h-5 bg-emerald-100 rounded flex items-center justify-center text-emerald-600 text-xs font-bold">3</div>
+                  <span className="text-xs font-semibold text-gray-700 uppercase tracking-wide">Staff &amp; Notes</span>
+                </div>
+                <div className="space-y-3">
+                  <div>
+                    <label className="block text-xs text-gray-500 mb-1">Signed In By</label>
+                    <select
+                      className="w-full px-3 py-2.5 border border-gray-200 rounded-xl text-sm outline-none focus:border-emerald-400 focus:ring-2 focus:ring-emerald-50 bg-white transition-all"
+                      value={visitForm.signedInBy}
+                      onChange={e => setVisitForm(f => ({ ...f, signedInBy: e.target.value }))}
+                    >
+                      <option value="">Select staff member...</option>
+                      <option>Mary Thompson</option>
+                      <option>John Davies</option>
+                      <option>Sarah Williams</option>
+                      <option>James Mitchell</option>
+                      <option>Lisa Anderson</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-xs text-gray-500 mb-1">Notes <span className="text-gray-400">(optional)</span></label>
+                    <textarea
+                      rows={3}
+                      className="w-full px-3 py-2.5 border border-gray-200 rounded-xl text-sm outline-none focus:border-emerald-400 focus:ring-2 focus:ring-emerald-50 resize-none transition-all"
+                      placeholder="Any observations, items brought in, mood of service user during visit..."
+                      value={visitForm.notes}
+                      onChange={e => setVisitForm(f => ({ ...f, notes: e.target.value }))}
+                    />
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Footer */}
+            <div className="flex items-center justify-between gap-3 px-6 py-4 border-t border-gray-100 bg-gray-50/60 rounded-b-2xl shrink-0">
+              <p className="text-xs text-gray-400"><span className="text-red-400">*</span> Required fields</p>
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => { setShowLogVisit(false); setVisitForm({ visitorName: '', relation: '', date: '', timeIn: '', timeOut: '', purpose: '', signedInBy: '', notes: '' }); }}
+                  className="px-4 py-2 text-sm text-gray-600 bg-white border border-gray-200 rounded-xl hover:bg-gray-50 transition-colors"
                 >
-                  <option value="">Select staff member...</option>
-                  <option>Mary Thompson</option>
-                  <option>John Davies</option>
-                  <option>Sarah Williams</option>
-                  <option>James Mitchell</option>
-                  <option>Lisa Anderson</option>
-                </select>
-              </div>
-
-              <div>
-                <label className="block text-xs text-gray-500 mb-1">Notes <span className="text-gray-400">(optional)</span></label>
-                <textarea
-                  rows={2}
-                  className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm outline-none focus:border-blue-400 resize-none"
-                  placeholder="Any observations or relevant notes about the visit..."
-                  value={visitForm.notes}
-                  onChange={e => setVisitForm(f => ({ ...f, notes: e.target.value }))}
-                />
+                  Cancel
+                </button>
+                <button
+                  onClick={submitVisitLog}
+                  disabled={
+                    !visitForm.visitorName ||
+                    visitForm.visitorName === '__other__' ||
+                    !visitForm.date ||
+                    !visitForm.timeIn ||
+                    !visitForm.timeOut ||
+                    calcHours(visitForm.timeIn, visitForm.timeOut) <= 0
+                  }
+                  className="flex items-center gap-2 px-5 py-2 text-sm bg-gradient-to-r from-purple-600 to-indigo-600 text-white rounded-xl hover:from-purple-700 hover:to-indigo-700 transition-all shadow-sm disabled:opacity-50 disabled:cursor-not-allowed font-medium"
+                >
+                  <Save size={14} /> Save Visit
+                </button>
               </div>
             </div>
 
-            <div className="flex justify-end gap-3 px-6 py-4 border-t border-gray-100">
-              <button onClick={() => setShowLogVisit(false)} className="px-4 py-2 text-sm text-gray-600 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors">Cancel</button>
-              <button
-                onClick={submitVisitLog}
-                disabled={!visitForm.visitorName || !visitForm.date || !visitForm.timeIn || !visitForm.timeOut}
-                className="flex items-center gap-2 px-4 py-2 text-sm bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                <Save size={14} /> Save Visit
-              </button>
-            </div>
           </div>
         </div>
       )}

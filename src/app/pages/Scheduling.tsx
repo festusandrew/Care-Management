@@ -125,64 +125,65 @@ export default function Scheduling() {
       <Sidebar activeItem="Scheduling" />
       <TopBar />
 
-      <main className="ml-64 pt-24 px-8 pb-12">
+      <main className="ml-0 md:ml-64 pt-20 px-4 md:px-8 pb-12 transition-all duration-300">
+        <div className="max-w-[1600px] mx-auto w-full">
 
-        {/* ── Page Header ── */}
-        <div className="flex items-center justify-between mb-6">
-          <div>
-            <h1 className="text-3xl text-gray-900">Staff Scheduling</h1>
-            <p className="text-sm text-gray-500 mt-1">Manage shifts, rosters, and staff coverage across all locations</p>
+          {/* ── Page Header ── */}
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
+            <div>
+              <h1 className="text-3xl text-gray-900">Staff Scheduling</h1>
+              <p className="text-sm text-gray-500 mt-1">Manage shifts, rosters, and staff coverage across all locations</p>
+            </div>
+            <div className="flex flex-wrap items-center gap-3">
+              <button
+                onClick={() => setCurrentPage('staff')}
+                className="flex items-center gap-2 px-4 py-2 bg-white border border-gray-200 text-gray-700 rounded-xl hover:bg-gray-50 transition-colors text-sm font-medium"
+              >
+                <Users size={16} className="text-blue-600" />
+                Staff Directory
+              </button>
+              <button
+                onClick={() => {
+                  const blob = new Blob([JSON.stringify(shifts, null, 2)], { type: 'application/json' });
+                  const url = URL.createObjectURL(blob);
+                  const a = document.createElement('a');
+                  a.href = url; a.download = `roster-${new Date().toISOString().slice(0, 10)}.json`; a.click();
+                  URL.revokeObjectURL(url);
+                }}
+                className="flex items-center gap-2 px-4 py-2 bg-white border border-gray-200 text-gray-700 rounded-xl hover:bg-gray-50 transition-colors text-sm font-medium"
+              >
+                <Download size={16} className="text-gray-500" />
+                Export Roster
+              </button>
+              <button
+                onClick={() => setShowAddShift(true)}
+                className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-xl hover:bg-blue-700 transition-colors text-sm font-medium shadow-sm"
+              >
+                <Plus size={18} />
+                Add Shift
+              </button>
+            </div>
           </div>
-          <div className="flex items-center gap-3">
-            <button
-              onClick={() => setCurrentPage('staff')}
-              className="flex items-center gap-2 px-4 py-2 bg-white border border-gray-200 text-gray-700 rounded-xl hover:bg-gray-50 transition-colors text-sm font-medium"
-            >
-              <Users size={16} className="text-blue-600" />
-              Staff Directory
-            </button>
-            <button
-              onClick={() => {
-                const blob = new Blob([JSON.stringify(shifts, null, 2)], { type: 'application/json' });
-                const url = URL.createObjectURL(blob);
-                const a = document.createElement('a');
-                a.href = url; a.download = `roster-${new Date().toISOString().slice(0, 10)}.json`; a.click();
-                URL.revokeObjectURL(url);
-              }}
-              className="flex items-center gap-2 px-4 py-2 bg-white border border-gray-200 text-gray-700 rounded-xl hover:bg-gray-50 transition-colors text-sm font-medium"
-            >
-              <Download size={16} className="text-gray-500" />
-              Export Roster
-            </button>
-            <button
-              onClick={() => setShowAddShift(true)}
-              className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-xl hover:bg-blue-700 transition-colors text-sm font-medium shadow-sm"
-            >
-              <Plus size={18} />
-              Add Shift
-            </button>
-          </div>
-        </div>
 
-        {/* ── KPI Cards ── */}
-        <div className="grid grid-cols-6 gap-4 mb-6">
-          {[
-            { label: 'Total Shifts', value: stats.totalShifts, icon: <CalendarDays size={20} />, color: 'text-blue-600', bg: 'bg-blue-50' },
-            { label: 'Staff On Duty', value: stats.staffOnDuty, icon: <Users size={20} />, color: 'text-emerald-600', bg: 'bg-emerald-50' },
-            { label: 'Unfilled Shifts', value: stats.unfilled, icon: <AlertCircle size={20} />, color: 'text-red-600', bg: 'bg-red-50' },
-            { label: 'Coverage', value: `${stats.coverage}%`, icon: <CheckCircle size={20} />, color: 'text-green-600', bg: 'bg-green-50' },
-            { label: 'Avg Hrs / Week', value: stats.averageHours, icon: <Clock size={20} />, color: 'text-blue-600', bg: 'bg-blue-50' },
-            { label: 'Overtime Hrs', value: stats.overtime, icon: <Clock size={20} />, color: 'text-amber-600', bg: 'bg-amber-50' },
-          ].map((s, i) => (
-            <Card key={i} className="flex items-center gap-3 py-4">
-              <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 ${s.bg} ${s.color}`}>{s.icon}</div>
-              <div>
-                <div className="text-xs text-gray-500">{s.label}</div>
-                <div className={`text-xl font-semibold ${s.color}`}>{s.value}</div>
-              </div>
-            </Card>
-          ))}
-        </div>
+          {/* ── KPI Cards ── */}
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4 mb-6">
+            {[
+              { label: 'Total Shifts', value: stats.totalShifts, icon: <CalendarDays size={20} />, color: 'text-blue-600', bg: 'bg-blue-50' },
+              { label: 'Staff On Duty', value: stats.staffOnDuty, icon: <Users size={20} />, color: 'text-emerald-600', bg: 'bg-emerald-50' },
+              { label: 'Unfilled Shifts', value: stats.unfilled, icon: <AlertCircle size={20} />, color: 'text-red-600', bg: 'bg-red-50' },
+              { label: 'Coverage', value: `${stats.coverage}%`, icon: <CheckCircle size={20} />, color: 'text-green-600', bg: 'bg-green-50' },
+              { label: 'Avg Hrs / Week', value: stats.averageHours, icon: <Clock size={20} />, color: 'text-blue-600', bg: 'bg-blue-50' },
+              { label: 'Overtime Hrs', value: stats.overtime, icon: <Clock size={20} />, color: 'text-amber-600', bg: 'bg-amber-50' },
+            ].map((s, i) => (
+              <Card key={i} className="flex items-center gap-3 py-4">
+                <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 ${s.bg} ${s.color}`}>{s.icon}</div>
+                <div>
+                  <div className="text-xs text-gray-500">{s.label}</div>
+                  <div className={`text-xl font-semibold ${s.color}`}>{s.value}</div>
+                </div>
+              </Card>
+            ))}
+          </div>
 
         {/* ── Live Attendance Strip ── */}
         {liveAttendance.length > 0 && (
@@ -578,8 +579,8 @@ export default function Scheduling() {
             </div>
           </div>
         </Card>
-
-      </main>
+      </div>
+    </main>
 
       {/* Modals */}
       <AddShiftModal isOpen={showAddShift} onClose={() => setShowAddShift(false)} />

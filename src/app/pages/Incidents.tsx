@@ -278,39 +278,40 @@ export default function Incidents() {
       <Sidebar activeItem="Incidents" />
       <TopBar />
       
-      <main className="ml-64 pt-24 px-8 pb-8">
-        {/* Header */}
-        <div className="flex items-center justify-between mb-6">
-          <div>
-            <h1 className="text-3xl text-gray-900">Incident Reporting & Management</h1>
-            <p className="text-sm text-gray-600 mt-1">Track, investigate, and resolve incidents to ensure safety and compliance</p>
+      <main className="ml-0 md:ml-64 pt-20 px-4 md:px-8 pb-8 transition-all duration-300">
+        <div className="max-w-[1600px] mx-auto w-full">
+          {/* Header */}
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
+            <div>
+              <h1 className="text-3xl text-gray-900">Incident Reporting & Management</h1>
+              <p className="text-sm text-gray-600 mt-1">Track, investigate, and resolve incidents to ensure safety and compliance</p>
+            </div>
+            <div className="flex items-center gap-3">
+              <button 
+                className="flex items-center gap-2 px-4 py-2 bg-gray-50 border border-gray-100 rounded-lg hover:bg-gray-100 transition-colors text-sm text-gray-700 font-medium"
+                onClick={() => {
+                  const data = JSON.stringify(incidents, null, 2);
+                  const blob = new Blob([data], { type: 'application/json' });
+                  const url = URL.createObjectURL(blob);
+                  const a = document.createElement('a');
+                  a.href = url;
+                  a.download = `incidents-report-${new Date().toISOString().slice(0, 10)}.json`;
+                  a.click();
+                  URL.revokeObjectURL(url);
+                }}
+              >
+                <Download size={18} className="text-gray-600" />
+                <span>Export Report</span>
+              </button>
+              <button 
+                className="flex items-center gap-2 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors text-sm font-semibold shadow-sm"
+                onClick={() => setShowReportIncident(true)}
+              >
+                <Plus size={20} />
+                Report Incident
+              </button>
+            </div>
           </div>
-          <div className="flex items-center gap-3">
-            <button 
-              className="flex items-center gap-2 px-4 py-2 bg-gray-50 border border-gray-100 rounded-lg hover:bg-gray-100 transition-colors"
-              onClick={() => {
-                const data = JSON.stringify(incidents, null, 2);
-                const blob = new Blob([data], { type: 'application/json' });
-                const url = URL.createObjectURL(blob);
-                const a = document.createElement('a');
-                a.href = url;
-                a.download = `incidents-report-${new Date().toISOString().slice(0, 10)}.json`;
-                a.click();
-                URL.revokeObjectURL(url);
-              }}
-            >
-              <Download size={18} className="text-gray-600" />
-              <span className="text-sm text-gray-700">Export Report</span>
-            </button>
-            <button 
-              className="flex items-center gap-2 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors"
-              onClick={() => setShowReportIncident(true)}
-            >
-              <Plus size={20} />
-              Report Incident
-            </button>
-          </div>
-        </div>
 
         {/* Summary Stats */}
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-6 mb-6">
@@ -415,7 +416,7 @@ export default function Incidents() {
 
         {/* Filters & Search */}
         <Card className="mb-6">
-          <div className="flex items-center gap-4">
+          <div className="flex flex-col lg:flex-row lg:items-center gap-4">
             {/* Search */}
             <div className="flex-1 relative">
               <Search size={18} className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
@@ -428,36 +429,39 @@ export default function Incidents() {
               />
             </div>
 
-            {/* Severity Filter */}
-            <select
-              value={filterSeverity}
-              onChange={(e) => setFilterSeverity(e.target.value)}
-              className="px-4 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:border-blue-500"
-            >
-              <option value="">All Severity</option>
-              <option value="high">High</option>
-              <option value="medium">Medium</option>
-              <option value="low">Low</option>
-            </select>
+            {/* Dropdown Filters row */}
+            <div className="flex flex-wrap items-center gap-4">
+              {/* Severity Filter */}
+              <select
+                value={filterSeverity}
+                onChange={(e) => setFilterSeverity(e.target.value)}
+                className="px-4 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:border-blue-500 bg-white"
+              >
+                <option value="">All Severity</option>
+                <option value="high">High</option>
+                <option value="medium">Medium</option>
+                <option value="low">Low</option>
+              </select>
 
-            {/* Type Filter */}
-            <select
-              value={filterType}
-              onChange={(e) => setFilterType(e.target.value)}
-              className="px-4 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:border-blue-500"
-            >
-              <option value="">All Types</option>
-              <option value="Behavioral">Behavioral</option>
-              <option value="Medication">Medication</option>
-              <option value="Accident/Injury">Accident/Injury</option>
-              <option value="Safeguarding">Safeguarding</option>
-              <option value="Property Damage">Property Damage</option>
-              <option value="Medical">Medical</option>
-            </select>
+              {/* Type Filter */}
+              <select
+                value={filterType}
+                onChange={(e) => setFilterType(e.target.value)}
+                className="px-4 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:border-blue-500 bg-white"
+              >
+                <option value="">All Types</option>
+                <option value="Behavioral">Behavioral</option>
+                <option value="Medication">Medication</option>
+                <option value="Accident/Injury">Accident/Injury</option>
+                <option value="Safeguarding">Safeguarding</option>
+                <option value="Property Damage">Property Damage</option>
+                <option value="Medical">Medical</option>
+              </select>
 
-            <button className="p-2 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors">
-              <Filter size={18} className="text-gray-600" />
-            </button>
+              <button className="p-2 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors">
+                <Filter size={18} className="text-gray-600" />
+              </button>
+            </div>
           </div>
         </Card>
 
@@ -632,9 +636,10 @@ export default function Incidents() {
 
         {/* Footer */}
         <div className="text-center py-6 text-xs text-gray-500 border-t border-gray-100 mt-8">
-          MpoweredCare © 2025 — Internal Use Only
+          Powered by MployUs
         </div>
-      </main>
+      </div>
+    </main>
 
       {/* Modals */}
       <ReportIncidentModal

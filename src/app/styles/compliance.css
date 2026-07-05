@@ -1,0 +1,30 @@
+/* src/app/styles/compliance.css */
+
+/* Card styling for consistency across compliance page */
+.card {
+  @apply bg-white rounded-xl shadow-sm transition-transform duration-200 ease-out;
+}
+.card:hover {
+  @apply shadow-md transform -translate-y-1;
+}
+/* Typography */
+h1, h2, h3 {
+  @apply font-bold font-['Inter',sans-serif];
+}
+/* Badge colors – ensure they match dashboard theme */
+.badge-compliant {
+  @apply bg-emerald-50 text-emerald-700 border border-emerald-200;
+}
+.badge-at-risk {
+  @apply bg-red-50 text-red-700 border border-red-200;
+}
+.badge-non-compliant {
+  @apply bg-red-50 text-red-800 border border-red-300;
+}
+.badge-pending {
+  @apply bg-amber-50 text-amber-700 border border-amber-200;
+}
+/* Table row hover */
+.table-row:hover {
+  @apply bg-gray-50;
+}

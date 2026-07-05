@@ -141,24 +141,25 @@ export default function Settings() {
       <Sidebar activeItem="Settings" />
       <TopBar />
       
-      <main className="ml-64 pt-24 px-8 pb-8">
-        {/* Header */}
-        <div className="flex items-center justify-between mb-6">
-          <div>
-            <h1 className="text-3xl text-gray-900">Settings</h1>
-            <p className="text-sm text-gray-600 mt-1">Manage your account, organization, and system preferences</p>
-          </div>
-          {saveSuccess && (
-            <div className="flex items-center gap-2 px-4 py-2 bg-green-50 border border-green-200 rounded-lg">
-              <Check size={18} className="text-green-600" />
-              <span className="text-sm text-green-900">Settings saved successfully</span>
+      <main className="ml-0 md:ml-64 pt-20 px-4 md:px-8 pb-8 transition-all duration-300">
+        <div className="max-w-[1600px] mx-auto w-full">
+          {/* Header */}
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
+            <div>
+              <h1 className="text-3xl text-gray-900">Settings</h1>
+              <p className="text-sm text-gray-600 mt-1">Manage your account, organization, and system preferences</p>
             </div>
-          )}
-        </div>
+            {saveSuccess && (
+              <div className="flex items-center gap-2 px-4 py-2 bg-green-50 border border-green-200 rounded-lg">
+                <Check size={18} className="text-green-600" />
+                <span className="text-sm text-green-900">Settings saved successfully</span>
+              </div>
+            )}
+          </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
-          {/* Left Sidebar Navigation */}
-          <div className="lg:col-span-1">
+          <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
+            {/* Left Sidebar Navigation */}
+            <div className="lg:col-span-1">
             <Card className="sticky top-24">
               <nav className="space-y-1">
                 <button
@@ -950,9 +951,10 @@ export default function Settings() {
 
         {/* Footer */}
         <div className="text-center py-6 text-xs text-gray-500 border-t border-gray-100 mt-8">
-          MpoweredCare © 2025 — Internal Use Only
+          Powered by MployUs
         </div>
-      </main>
+      </div>
+    </main>
 
       {/* Modals */}
       <AddUserModal

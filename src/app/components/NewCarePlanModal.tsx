@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { X, Search, ChevronRight, ChevronLeft, Check, Plus, Tag } from 'lucide-react';
 import svgPaths from '../imports/svg-epep64l0za';
 
@@ -77,6 +77,36 @@ export function NewCarePlanModal({ show, onClose, onCreate }: NewCarePlanModalPr
   const [priority, setPriority] = useState<'routine' | 'urgent' | 'immediate'>('routine');
   const [notes, setNotes] = useState('');
   const [typeSearch, setTypeSearch] = useState('');
+
+  // State for visual error feedback
+  const [showErrors, setShowErrors] = useState(false);
+
+  // Validation per step
+  const isStepValid = useMemo(() => {
+    if (step === 1) return !!selectedPlanType;
+    if (step === 2) return !!selectedUser && !!selectedPlanType;
+    return true;
+  }, [step, selectedPlanType, selectedUser]);
+
+  // Handler for Continue (step 1)
+  const handleContinue = () => {
+    if (selectedPlanType) {
+      setStep(2);
+      setShowErrors(false);
+    } else {
+      setShowErrors(true);
+    }
+  };
+
+  // Handler for final Create (step 2)
+  const handleCreatePlan = () => {
+    if (selectedUser && selectedPlanType) {
+      onCreate({ serviceUser: selectedUser, planType: selectedPlanType.name, priority, notes });
+      handleClose();
+    } else {
+      setShowErrors(true);
+    }
+  };
 
   // Custom plan type creation
   const [customTypes, setCustomTypes] = useState<PlanType[]>([]);
@@ -423,6 +453,9 @@ export function NewCarePlanModal({ show, onClose, onCreate }: NewCarePlanModalPr
                     className="flex-1 bg-transparent text-sm outline-none text-gray-700"
                   />
                 </div>
+                {showErrors && !selectedUser && (
+                  <p className="text-xs text-red-600 mt-1">Please select a service user.</p>
+                )}
                 <div className="border border-gray-100 rounded-xl overflow-hidden max-h-48 overflow-y-auto">
                   {filteredUsers.map(user => (
                     <button
@@ -500,23 +533,31 @@ export function NewCarePlanModal({ show, onClose, onCreate }: NewCarePlanModalPr
           </button>
 
           {step === 1 ? (
-            <button
-              onClick={() => setStep(2)}
-              disabled={!selectedPlanType}
-              className="flex items-center gap-2 px-5 py-2 bg-blue-600 text-white text-sm rounded-xl hover:bg-blue-700 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
-            >
-              Continue
-              <ChevronRight size={16} />
-            </button>
+            <>
+              <button
+                onClick={handleContinue}
+                className="flex items-center gap-2 px-5 py-2 bg-blue-600 text-white text-sm rounded-xl hover:bg-blue-700 transition-colors"
+              >
+                Continue
+                <ChevronRight size={16} />
+              </button>
+              {showErrors && !selectedPlanType && (
+                <p className="text-xs text-red-600 mt-2">Please select a plan type before continuing.</p>
+              )}
+            </>
           ) : (
-            <button
-              onClick={handleSubmit}
-              disabled={!selectedUser || !selectedPlanType}
-              className="flex items-center gap-2 px-5 py-2 bg-blue-600 text-white text-sm rounded-xl hover:bg-blue-700 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
-            >
-              <Check size={16} />
-              Create Care Plan
-            </button>
+            <>
+              <button
+                onClick={handleCreatePlan}
+                className="flex items-center gap-2 px-5 py-2 bg-blue-600 text-white text-sm rounded-xl hover:bg-blue-700 transition-colors"
+              >
+                <Check size={16} />
+                Create Care Plan
+              </button>
+              {showErrors && (!selectedUser || !selectedPlanType) && (
+                <p className="text-xs text-red-600 mt-2">Please select a service user and plan type before creating the care plan.</p>
+              )}
+            </>
           )}
         </div>
       </div>

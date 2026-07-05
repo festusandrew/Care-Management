@@ -19,3 +19,12 @@
 h1, h2, h3, h4, h5, h6 {
   font-weight: 700;
 }
+
+@media (min-width: 768px) {
+  body.sidebar-collapsed main {
+    margin-left: 4.5rem !important;
+  }
+  body.sidebar-collapsed .md\:left-64 {
+    left: 4.5rem !important;
+  }
+}

@@ -39,7 +39,8 @@ import {
   ClipboardCheck,
   MoreVertical,
   User,
-  Bell
+  Bell,
+  ChevronLeft
 } from 'lucide-react';
 import { useState } from 'react';
 
@@ -55,7 +56,7 @@ export default function Compliance() {
   const [showAssignTraining, setShowAssignTraining] = useState(false);
   const [showAddCertificate, setShowAddCertificate] = useState(false);
   const [showAllRenewals, setShowAllRenewals] = useState(false);
-  const [activeTab, setActiveTab] = useState<TabType>('requirements');
+  const [activeTab, setActiveTab] = useState<TabType>('overview');
   const [showAddRequirement, setShowAddRequirement] = useState(false);
   const [showFilters, setShowFilters] = useState(false);
   const [filterStatus, setFilterStatus] = useState('');
@@ -71,6 +72,12 @@ export default function Compliance() {
   const [showRiskDetail, setShowRiskDetail] = useState(false);
   const [showExportReport, setShowExportReport] = useState(false);
   const [exportReportTitle, setExportReportTitle] = useState('');
+
+  const [reqPage, setReqPage] = useState(1);
+  const REQ_PER_PAGE = 5;
+
+  const [auditPage, setAuditPage] = useState(1);
+  const AUDIT_PER_PAGE = 4;
 
   const stats = {
     complianceRate: 58,
@@ -511,6 +518,20 @@ export default function Compliance() {
     return matchesSearch && matchesStatus && matchesRisk && matchesCategory && matchesDateFrom && matchesDateTo;
   });
 
+  const totalReqPages = Math.max(1, Math.ceil(filteredRequirements.length / REQ_PER_PAGE));
+  const currentReqPage = Math.min(reqPage, totalReqPages);
+  const pagedRequirements = filteredRequirements.slice(
+    (currentReqPage - 1) * REQ_PER_PAGE,
+    currentReqPage * REQ_PER_PAGE
+  );
+
+  const totalAuditPages = Math.max(1, Math.ceil(audits.length / AUDIT_PER_PAGE));
+  const currentAuditPage = Math.min(auditPage, totalAuditPages);
+  const pagedAudits = audits.slice(
+    (currentAuditPage - 1) * AUDIT_PER_PAGE,
+    currentAuditPage * AUDIT_PER_PAGE
+  );
+
   const tabs: { key: TabType; label: string; icon: any }[] = [
     { key: 'overview', label: 'Overview', icon: BarChart3 },
     { key: 'requirements', label: 'Requirements', icon: ListChecks },
@@ -522,108 +543,108 @@ export default function Compliance() {
   ];
 
   const categories = [...new Set(requirements.map((r) => r.category))];
-
   return (
     <div className="bg-gray-50 min-h-screen">
       <Sidebar activeItem="Compliance" />
       <TopBar />
 
-      <main className="ml-64 pt-24 px-8 pb-8">
-        {/* Header */}
-        <div className="flex items-center justify-between mb-6">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-indigo-100 flex items-center justify-center">
-              <Shield size={20} className="text-indigo-600" />
-            </div>
+      <main className="ml-0 md:ml-64 pt-20 px-4 md:px-8 pb-8 transition-all duration-300">
+        <div className="max-w-[1600px] mx-auto w-full">
+          {/* Header */}
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-8">
             <div>
-              <h1 className="text-2xl text-gray-900">Compliance & Risk Management</h1>
-              <p className="text-sm text-gray-500">Regulatory compliance tracking and audit management</p>
+              <h1 className="text-2xl font-bold text-gray-900 tracking-tight">Compliance Management</h1>
+              <p className="text-sm text-gray-500 mt-1">Track and manage all regulatory compliance documentation and audits</p>
             </div>
-          </div>
-          <div className="flex items-center gap-3">
-            <button
-              className="flex items-center gap-2 px-4 py-2 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors text-sm text-gray-700"
-              onClick={() => {
-                setExportReportTitle('');
-                setShowExportReport(true);
-              }}
-            >
-              <Download size={16} />
-              Export Report
-            </button>
-            <button
-              className="flex items-center gap-2 px-4 py-2 bg-blue-700 text-white rounded-lg hover:bg-blue-800 transition-colors text-sm"
-              onClick={() => setShowAddAudit(true)}
-            >
-              <Calendar size={16} />
-              Schedule Audit
-            </button>
-          </div>
-        </div>
-
-        {/* Summary Stats */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-          {/* Overall Compliance Rate */}
-          <div className="bg-white rounded-xl border border-gray-100 p-5">
-            <div className="flex items-center justify-between mb-3">
-              <div className="w-10 h-10 rounded-xl bg-emerald-50 flex items-center justify-center">
-                <CheckCircle size={20} className="text-emerald-600" />
-              </div>
-              <div className="flex items-center gap-1 text-emerald-600 text-xs">
-                <TrendingUp size={14} />
-                <span>{stats.complianceChange}</span>
-              </div>
+            <div className="flex items-center gap-3">
+              <button
+                className="flex items-center gap-2 px-4 py-2 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors text-sm text-gray-700 font-medium"
+                onClick={() => {
+                  setExportReportTitle('');
+                  setShowExportReport(true);
+                }}
+              >
+                <Download size={16} />
+                Export
+              </button>
+              <button
+                className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors text-sm font-semibold shadow-sm"
+                onClick={() => setShowAddCertificate(true)}
+              >
+                <Plus size={16} />
+                Upload Document
+              </button>
             </div>
-            <div className="text-3xl text-gray-900 mb-1">{stats.complianceRate}%</div>
-            <div className="text-sm text-gray-500">Overall Compliance Rate</div>
-            <div className="text-xs text-gray-400 mt-0.5">{stats.requirementsMet}/{stats.totalRequirements} requirements met</div>
           </div>
 
-          {/* Audits Due/In Progress */}
-          <div className="bg-white rounded-xl border border-gray-100 p-5">
-            <div className="flex items-center justify-between mb-3">
-              <div className="w-10 h-10 rounded-xl bg-blue-50 flex items-center justify-center">
-                <Calendar size={20} className="text-blue-600" />
+        {/* Summary Stats Row */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5 mb-8">
+          {/* Card 1: Overall Compliance Rate */}
+          <div className="bg-white rounded-xl border border-gray-100 p-5 shadow-sm">
+            <div className="flex items-center gap-4">
+              <div className="w-10 h-10 rounded-lg bg-emerald-50 flex items-center justify-center shrink-0">
+                <CheckCircle size={20} className="text-emerald-500" />
               </div>
-              <div className="text-gray-400">
-                <BarChart3 size={14} />
+              <div className="flex-1">
+                <div className="text-xs text-gray-400 font-medium uppercase tracking-wider">Overall Compliance</div>
+                <div className="text-2xl font-bold text-gray-900 mt-0.5">{stats.complianceRate}%</div>
               </div>
             </div>
-            <div className="text-3xl text-gray-900 mb-1">{stats.auditsDue}</div>
-            <div className="text-sm text-gray-500">Audits Due/In Progress</div>
-            <div className="text-xs text-gray-400 mt-0.5">{stats.auditsOverdue} overdue · {stats.auditsTotal} total</div>
+            <div className="flex items-center justify-between mt-4 pt-3 border-t border-gray-50 text-xs">
+              <span className="text-emerald-600 font-medium">{stats.complianceChange} from last month</span>
+              <span className="text-gray-400">{stats.requirementsMet}/{stats.totalRequirements} requirements</span>
+            </div>
           </div>
 
-          {/* Open Compliance Gaps */}
-          <div className="bg-white rounded-xl border border-gray-100 p-5">
-            <div className="flex items-center justify-between mb-3">
-              <div className="w-10 h-10 rounded-xl bg-red-50 flex items-center justify-center">
-                <AlertTriangle size={20} className="text-red-600" />
+          {/* Card 2: Audits Pending */}
+          <div className="bg-white rounded-xl border border-gray-100 p-5 shadow-sm">
+            <div className="flex items-center gap-4">
+              <div className="w-10 h-10 rounded-lg bg-amber-50 flex items-center justify-center shrink-0">
+                <Clock size={20} className="text-amber-500" />
               </div>
-              <div className="flex items-center gap-1 text-red-600 text-xs">
-                <TrendingDown size={14} />
-                <span>{stats.gapsChange}</span>
+              <div className="flex-1">
+                <div className="text-xs text-gray-400 font-medium uppercase tracking-wider">Audits Due</div>
+                <div className="text-2xl font-bold text-gray-900 mt-0.5">{stats.auditsDue}</div>
               </div>
             </div>
-            <div className="text-3xl text-gray-900 mb-1">{stats.complianceGaps}</div>
-            <div className="text-sm text-gray-500">Open Compliance Gaps</div>
-            <div className="text-xs text-gray-400 mt-0.5">{stats.gapsCritical} critical · {stats.gapsTotal} total</div>
+            <div className="flex items-center justify-between mt-4 pt-3 border-t border-gray-50 text-xs">
+              <span className="text-amber-600 font-medium">{stats.auditsOverdue} overdue</span>
+              <span className="text-gray-400">{stats.auditsTotal} total</span>
+            </div>
           </div>
 
-          {/* Avg. Audit Score */}
-          <div className="bg-white rounded-xl border border-gray-100 p-5">
-            <div className="flex items-center justify-between mb-3">
-              <div className="w-10 h-10 rounded-xl bg-purple-50 flex items-center justify-center">
-                <BarChart3 size={20} className="text-purple-600" />
+          {/* Card 3: Compliance Gaps */}
+          <div className="bg-white rounded-xl border border-gray-100 p-5 shadow-sm">
+            <div className="flex items-center gap-4">
+              <div className="w-10 h-10 rounded-lg bg-red-50 flex items-center justify-center shrink-0">
+                <AlertTriangle size={20} className="text-red-500" />
               </div>
-              <div className="flex items-center gap-1 text-emerald-600 text-xs">
-                <TrendingUp size={14} />
-                <span>{stats.auditScoreChange}</span>
+              <div className="flex-1">
+                <div className="text-xs text-gray-400 font-medium uppercase tracking-wider">Compliance Gaps</div>
+                <div className="text-2xl font-bold text-gray-900 mt-0.5">{stats.complianceGaps}</div>
               </div>
             </div>
-            <div className="text-3xl text-gray-900 mb-1">{stats.avgAuditScore}</div>
-            <div className="text-sm text-gray-500">Avg. Audit Score</div>
-            <div className="text-xs text-gray-400 mt-0.5">Last {stats.completedAudits} completed audits</div>
+            <div className="flex items-center justify-between mt-4 pt-3 border-t border-gray-50 text-xs">
+              <span className="text-red-500 font-medium">{stats.gapsCritical} critical gaps</span>
+              <span className="text-gray-400">{stats.gapsTotal} total</span>
+            </div>
+          </div>
+
+          {/* Card 4: Avg Audit Score */}
+          <div className="bg-white rounded-xl border border-gray-100 p-5 shadow-sm">
+            <div className="flex items-center gap-4">
+              <div className="w-10 h-10 rounded-lg bg-blue-50 flex items-center justify-center shrink-0">
+                <FileText size={20} className="text-blue-500" />
+              </div>
+              <div className="flex-1">
+                <div className="text-xs text-gray-400 font-medium uppercase tracking-wider">Avg. Audit Score</div>
+                <div className="text-2xl font-bold text-gray-900 mt-0.5">{stats.avgAuditScore}%</div>
+              </div>
+            </div>
+            <div className="flex items-center justify-between mt-4 pt-3 border-t border-gray-50 text-xs">
+              <span className="text-emerald-600 font-medium">{stats.auditScoreChange} vs last audit</span>
+              <span className="text-gray-400">Completed {stats.completedAudits}</span>
+            </div>
           </div>
         </div>
 
@@ -738,21 +759,21 @@ export default function Compliance() {
         </div>
 
         {/* Tab Navigation */}
-        <div className="border-b border-gray-200 mb-6">
-          <div className="flex items-center gap-1">
+        <div className="border-b border-gray-100 mb-6 pb-2 overflow-x-auto">
+          <div className="flex items-center gap-1.5 min-w-max">
             {tabs.map((tab) => {
               const Icon = tab.icon;
               return (
                 <button
                   key={tab.key}
                   onClick={() => setActiveTab(tab.key)}
-                  className={`flex items-center gap-2 px-4 py-3 text-sm border-b-2 transition-colors ${
+                  className={`flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-lg transition-all ${
                     activeTab === tab.key
-                      ? 'border-blue-700 text-blue-700'
-                      : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                      ? 'bg-blue-50 text-blue-700 border border-blue-100/50 shadow-sm'
+                      : 'text-gray-500 hover:text-gray-700 hover:bg-gray-100/50'
                   }`}
                 >
-                  <Icon size={16} />
+                  <Icon size={15} />
                   {tab.label}
                 </button>
               );
@@ -762,113 +783,121 @@ export default function Compliance() {
 
         {/* ===== OVERVIEW TAB ===== */}
         {activeTab === 'overview' && (
-          <div className="space-y-6">
-            {/* Upcoming Renewals */}
-            <div className="bg-white rounded-xl border border-gray-100 p-6">
-              <div className="flex items-center justify-between mb-4">
-                <h3 className="text-gray-900">Upcoming Renewals & Deadlines</h3>
-                <button className="text-sm text-blue-600 hover:text-blue-700" onClick={() => setShowAllRenewals(true)}>
-                  View All
-                </button>
-              </div>
-              <div className="space-y-2">
-                {upcomingRenewals.map((renewal) => (
-                  <div key={renewal.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-                    <div className="flex items-center gap-3">
-                      {renewal.priority === 'overdue' && <XCircle size={18} className="text-red-600" />}
-                      {renewal.priority === 'high' && <AlertTriangle size={18} className="text-amber-600" />}
-                      {renewal.priority === 'medium' && <Clock size={18} className="text-blue-600" />}
-                      {renewal.priority === 'low' && <CheckCircle size={18} className="text-green-600" />}
-                      <div>
-                        <div className="text-sm text-gray-900">{renewal.item}</div>
-                        <div className="text-xs text-gray-500">Due: {renewal.dueDate}</div>
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            {/* Left Col - 2/3 width on large screens */}
+            <div className="lg:col-span-2 space-y-6">
+              {/* Upcoming Renewals */}
+              <div className="bg-white rounded-xl border border-gray-100 p-6 shadow-sm">
+                <div className="flex items-center justify-between mb-5">
+                  <h3 className="text-base font-bold text-gray-900">Upcoming Renewals & Deadlines</h3>
+                  <button className="text-xs font-semibold text-blue-600 hover:text-blue-700 transition-colors" onClick={() => setShowAllRenewals(true)}>
+                    View All
+                  </button>
+                </div>
+                <div className="space-y-3">
+                  {upcomingRenewals.map((renewal) => (
+                    <div key={renewal.id} className="flex items-center justify-between p-3.5 bg-gray-50/50 rounded-xl border border-gray-100 hover:border-gray-200 transition-colors">
+                      <div className="flex items-center gap-3">
+                        <div className="shrink-0">
+                          {renewal.priority === 'overdue' && <div className="w-8 h-8 rounded-lg bg-red-50 flex items-center justify-center text-red-500"><XCircle size={16} /></div>}
+                          {renewal.priority === 'high' && <div className="w-8 h-8 rounded-lg bg-amber-50 flex items-center justify-center text-amber-500"><AlertTriangle size={16} /></div>}
+                          {renewal.priority === 'medium' && <div className="w-8 h-8 rounded-lg bg-blue-50 flex items-center justify-center text-blue-500"><Clock size={16} /></div>}
+                          {renewal.priority === 'low' && <div className="w-8 h-8 rounded-lg bg-emerald-50 flex items-center justify-center text-emerald-500"><CheckCircle size={16} /></div>}
+                        </div>
+                        <div>
+                          <div className="text-sm font-semibold text-gray-900">{renewal.item}</div>
+                          <div className="text-xs text-gray-400 mt-0.5">Due Date: {renewal.dueDate}</div>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-3.5">
+                        {renewal.priority === 'overdue' ? (
+                          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-red-50 text-red-700 border border-red-100">{Math.abs(renewal.daysLeft)} days overdue</span>
+                        ) : (
+                          <span className="text-xs font-semibold text-gray-500 bg-gray-100 px-2.5 py-0.5 rounded-full">{renewal.daysLeft} days left</span>
+                        )}
+                        <button
+                          className="flex items-center gap-1 px-3 py-1.5 text-xs text-blue-600 bg-white border border-blue-200 hover:bg-blue-50 rounded-lg transition-colors font-semibold"
+                          onClick={() => {
+                            setSelectedRenewal(renewal);
+                            setShowRenewTraining(true);
+                          }}
+                        >
+                          Renew
+                        </button>
                       </div>
                     </div>
-                    <div className="flex items-center gap-3">
-                      {renewal.priority === 'overdue' ? (
-                        <span className="inline-flex items-center px-2.5 py-1 rounded-md text-xs bg-red-50 text-red-700 border border-red-200">{Math.abs(renewal.daysLeft)} days overdue</span>
-                      ) : (
-                        <span className="text-sm text-gray-500">{renewal.daysLeft} days left</span>
-                      )}
+                  ))}
+                </div>
+              </div>
+
+              {/* Recent Audits */}
+              <div className="bg-white rounded-xl border border-gray-100 p-6 shadow-sm">
+                <div className="flex items-center justify-between mb-5">
+                  <h3 className="text-base font-bold text-gray-900">Recent Audit Activity</h3>
+                  <button className="text-xs font-semibold text-blue-600 hover:text-blue-700 transition-colors" onClick={() => setActiveTab('audits')}>
+                    View All Audits
+                  </button>
+                </div>
+                <div className="space-y-3">
+                  {audits.slice(0, 3).map((audit) => (
+                    <div key={audit.id} className="flex items-center justify-between p-3.5 bg-gray-50/50 rounded-xl border border-gray-100 hover:border-gray-200 transition-colors">
+                      <div className="flex-1 min-w-0 pr-4">
+                        <div className="flex items-center gap-2 mb-1.5 flex-wrap">
+                          <span className="font-mono text-[10px] font-bold text-blue-600 bg-blue-50 px-2 py-0.5 rounded border border-blue-100/50">{audit.auditNumber}</span>
+                          <span className="text-sm font-semibold text-gray-900 truncate">{audit.title}</span>
+                          {getStatusBadge(audit.status)}
+                        </div>
+                        <div className="flex items-center gap-3 text-xs text-gray-400">
+                          <span>{audit.type} Audit</span>
+                          <span>·</span>
+                          <span>{audit.auditor}</span>
+                          <span>·</span>
+                          <span>{audit.scheduledDate}</span>
+                        </div>
+                      </div>
                       <button
-                        className="px-3 py-1.5 text-sm bg-blue-700 text-white rounded-lg hover:bg-blue-800 transition-colors"
+                        className="flex items-center gap-1 px-3 py-1.5 text-xs text-blue-600 bg-white border border-blue-200 hover:bg-blue-50 rounded-lg transition-colors font-semibold"
                         onClick={() => {
-                          setSelectedRenewal(renewal);
-                          setShowRenewTraining(true);
+                          setSelectedAudit(audit);
+                          setShowAuditDetails(true);
                         }}
                       >
-                        Renew
+                        <Eye size={13} /> View
                       </button>
                     </div>
-                  </div>
-                ))}
+                  ))}
+                </div>
               </div>
             </div>
 
-            {/* Compliance by Area */}
-            <div className="bg-white rounded-xl border border-gray-100 p-6">
-              <h3 className="text-gray-900 mb-4">Compliance by Area</h3>
-              <div className="space-y-4">
-                {[
-                  { name: 'Data Protection & GDPR', compliance: 72, color: 'bg-amber-500' },
-                  { name: 'Health & Safety', compliance: 52, color: 'bg-red-500' },
-                  { name: 'Employment Law', compliance: 90, color: 'bg-emerald-500' },
-                  { name: 'Financial / Payroll', compliance: 100, color: 'bg-emerald-500' },
-                  { name: 'Equality & Diversity', compliance: 100, color: 'bg-emerald-500' },
-                  { name: 'Industrial Relations', compliance: 70, color: 'bg-amber-500' },
-                ].map((area) => (
-                  <div key={area.name}>
-                    <div className="flex items-center justify-between mb-1.5">
-                      <span className="text-sm text-gray-700">{area.name}</span>
-                      <span className="text-sm text-gray-500">{area.compliance}%</span>
-                    </div>
-                    <div className="w-full bg-gray-100 rounded-full h-2">
-                      <div
-                        className={`${area.color} h-2 rounded-full transition-all`}
-                        style={{ width: `${area.compliance}%` }}
-                      />
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            {/* Recent Audits */}
-            <div className="bg-white rounded-xl border border-gray-100 p-6">
-              <div className="flex items-center justify-between mb-4">
-                <h3 className="text-gray-900">Recent Audit Activity</h3>
-                <button className="text-sm text-blue-600 hover:text-blue-700" onClick={() => setActiveTab('audits')}>
-                  View All Audits
-                </button>
-              </div>
-              <div className="space-y-2">
-                {audits.slice(0, 3).map((audit) => (
-                  <div key={audit.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-                    <div>
-                      <div className="flex items-center gap-2 mb-1">
-                        <span className="font-mono text-xs text-blue-600">{audit.auditNumber}</span>
-                        <span className="text-sm text-gray-900">{audit.title}</span>
-                        {getStatusBadge(audit.status)}
+            {/* Right Col - 1/3 width on large screens */}
+            <div className="space-y-6">
+              {/* Compliance by Area */}
+              <div className="bg-white rounded-xl border border-gray-100 p-6 shadow-sm">
+                <h3 className="text-base font-bold text-gray-900 mb-5">Compliance by Area</h3>
+                <div className="space-y-5">
+                  {[
+                    { name: 'Data Protection & GDPR', compliance: 72, color: 'bg-amber-500' },
+                    { name: 'Health & Safety', compliance: 52, color: 'bg-red-500' },
+                    { name: 'Employment Law', compliance: 90, color: 'bg-emerald-500' },
+                    { name: 'Financial / Payroll', compliance: 100, color: 'bg-emerald-500' },
+                    { name: 'Equality & Diversity', compliance: 100, color: 'bg-emerald-500' },
+                    { name: 'Industrial Relations', compliance: 70, color: 'bg-amber-500' },
+                  ].map((area) => (
+                    <div key={area.name} className="flex flex-col">
+                      <div className="flex items-center justify-between mb-2">
+                        <span className="text-xs font-semibold text-gray-700">{area.name}</span>
+                        <span className="text-xs font-bold text-gray-900">{area.compliance}%</span>
                       </div>
-                      <div className="flex items-center gap-3 text-xs text-gray-500">
-                        <span>{audit.type}</span>
-                        <span>·</span>
-                        <span>{audit.auditor}</span>
-                        <span>·</span>
-                        <span>{audit.scheduledDate}</span>
+                      <div className="w-full bg-gray-100 rounded-full h-2 overflow-hidden">
+                        <div
+                          className={`${area.color} h-2 rounded-full transition-all`}
+                          style={{ width: `${area.compliance}%` }}
+                        />
                       </div>
                     </div>
-                    <button
-                      className="px-3 py-1.5 text-sm bg-white border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors"
-                      onClick={() => {
-                        setSelectedAudit(audit);
-                        setShowAuditDetails(true);
-                      }}
-                    >
-                      View
-                    </button>
-                  </div>
-                ))}
+                  ))}
+                </div>
               </div>
             </div>
           </div>
@@ -876,13 +905,14 @@ export default function Compliance() {
 
         {/* ===== REQUIREMENTS TAB ===== */}
         {activeTab === 'requirements' && (
-          <div>
-            <div className="flex items-center justify-between mb-4">
-              <span className="text-sm text-gray-500">
-                Showing {filteredRequirements.length} of {requirements.length} requirements
-              </span>
+          <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-6">
+            <div className="flex items-center justify-between mb-5">
+              <div>
+                <h3 className="text-base font-bold text-gray-900">Requirement Compliance Status</h3>
+                <p className="text-xs text-gray-400 mt-0.5">Showing {filteredRequirements.length} of {requirements.length} requirements</p>
+              </div>
               <button
-                className="flex items-center gap-2 px-4 py-2 bg-blue-700 text-white rounded-lg hover:bg-blue-800 transition-colors text-sm"
+                className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors text-sm font-semibold shadow-sm"
                 onClick={() => setShowAddRequirement(!showAddRequirement)}
               >
                 <Plus size={16} />
@@ -890,47 +920,56 @@ export default function Compliance() {
               </button>
             </div>
 
-            <div className="bg-white rounded-xl border border-gray-100 overflow-x-auto">
+            <div className="overflow-x-auto">
               <table className="w-full">
                 <thead>
-                  <tr className="border-b border-gray-100">
-                    <th className="text-left px-5 py-3.5 text-xs text-gray-500 uppercase tracking-wider">Requirement</th>
-                    <th className="text-left px-5 py-3.5 text-xs text-gray-500 uppercase tracking-wider">Client</th>
-                    <th className="text-left px-5 py-3.5 text-xs text-gray-500 uppercase tracking-wider">Category</th>
-                    <th className="text-left px-5 py-3.5 text-xs text-gray-500 uppercase tracking-wider">Status</th>
-                    <th className="text-left px-5 py-3.5 text-xs text-gray-500 uppercase tracking-wider">Risk</th>
-                    <th className="text-left px-5 py-3.5 text-xs text-gray-500 uppercase tracking-wider">Progress</th>
-                    <th className="text-left px-5 py-3.5 text-xs text-gray-500 uppercase tracking-wider">Next Review</th>
-                    <th className="text-center px-5 py-3.5 text-xs text-gray-500 uppercase tracking-wider">Actions</th>
+                  <tr className="border-b border-gray-100 text-left text-xs font-semibold text-gray-400">
+                    <th className="pb-3 pr-4">Requirement</th>
+                    <th className="pb-3 px-4">Client</th>
+                    <th className="pb-3 px-4">Category</th>
+                    <th className="pb-3 px-4">Status</th>
+                    <th className="pb-3 px-4">Risk</th>
+                    <th className="pb-3 px-4">Progress</th>
+                    <th className="pb-3 px-4">Next Review</th>
+                    <th className="pb-3 pl-4 text-right">Action</th>
                   </tr>
                 </thead>
-                <tbody>
-                  {filteredRequirements.map((req) => (
-                    <tr key={req.id} className="border-b border-gray-50 hover:bg-gray-50/50 transition-colors">
-                      <td className="px-5 py-4">
-                        <div className="text-sm text-gray-900">{req.name}</div>
-                        <div className="text-xs text-gray-400 mt-0.5">{req.legislation}</div>
-                      </td>
-                      <td className="px-5 py-4 text-sm text-gray-600">{req.client}</td>
-                      <td className="px-5 py-4 text-sm text-gray-600">{req.category}</td>
-                      <td className="px-5 py-4">{getStatusBadge(req.status)}</td>
-                      <td className="px-5 py-4">{getRiskBadge(req.risk)}</td>
-                      <td className="px-5 py-4">
-                        <div className="flex items-center gap-2">
-                          <div className={`w-2 h-2 rounded-full ${getProgressDotColor(req.progress)}`} />
-                          <span className="text-sm text-gray-700">{req.progress}%</span>
+                <tbody className="divide-y divide-gray-50">
+                  {pagedRequirements.map((req) => (
+                    <tr key={req.id} className="hover:bg-gray-50/50 transition-colors">
+                      <td className="py-3.5 pr-4">
+                        <div className="flex items-center gap-3">
+                          <div className="w-9 h-9 rounded-lg bg-indigo-50 flex items-center justify-center shrink-0">
+                            <FileText size={16} className="text-indigo-500" />
+                          </div>
+                          <div>
+                            <div className="text-sm font-semibold text-gray-900">{req.name}</div>
+                            <div className="text-xs text-gray-400 mt-0.5">{req.legislation}</div>
+                          </div>
                         </div>
                       </td>
-                      <td className="px-5 py-4 text-sm text-gray-600">{req.nextReview}</td>
-                      <td className="px-5 py-4 text-center">
+                      <td className="py-3.5 px-4 text-sm text-gray-600 font-medium">{req.client}</td>
+                      <td className="py-3.5 px-4 text-sm text-gray-500">{req.category}</td>
+                      <td className="py-3.5 px-4">{getStatusBadge(req.status)}</td>
+                      <td className="py-3.5 px-4">{getRiskBadge(req.risk)}</td>
+                      <td className="py-3.5 px-4">
+                        <div className="flex items-center gap-2">
+                          <div className="flex-1 min-w-[60px] h-1.5 bg-gray-100 rounded-full overflow-hidden">
+                            <div className={`h-full rounded-full ${getProgressColor(req.progress)}`} style={{ width: `${req.progress}%` }} />
+                          </div>
+                          <span className="text-xs font-bold text-gray-900">{req.progress}%</span>
+                        </div>
+                      </td>
+                      <td className="py-3.5 px-4 text-sm text-gray-500 font-medium">{req.nextReview}</td>
+                      <td className="py-3.5 pl-4 text-right">
                         <button
-                          className="p-1.5 hover:bg-gray-100 rounded-lg transition-colors"
+                          className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs text-blue-600 bg-white border border-blue-200 hover:bg-blue-50 rounded-lg transition-colors font-semibold"
                           onClick={() => {
                             setSelectedRequirement(req);
                             setShowRequirementDetail(true);
                           }}
                         >
-                          <Eye size={16} className="text-gray-400" />
+                          <Eye size={13} /> View
                         </button>
                       </td>
                     </tr>
@@ -938,13 +977,44 @@ export default function Compliance() {
                 </tbody>
               </table>
             </div>
+
+            {/* Paginator */}
+            {totalReqPages > 1 && (
+              <div className="flex items-center justify-between pt-4 mt-4 border-t border-gray-100 bg-white">
+                <span className="text-xs text-gray-500 font-medium">
+                  Showing {Math.min((currentReqPage - 1) * REQ_PER_PAGE + 1, filteredRequirements.length)}–
+                  {Math.min(currentReqPage * REQ_PER_PAGE, filteredRequirements.length)} of {filteredRequirements.length} requirements
+                </span>
+                <div className="flex items-center gap-1.5">
+                  <button
+                    onClick={() => setReqPage(p => Math.max(1, p - 1))}
+                    disabled={currentReqPage === 1}
+                    className="p-1.5 rounded-lg text-gray-500 hover:bg-gray-100 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+                    aria-label="Previous page"
+                  >
+                    <ChevronLeft size={16} />
+                  </button>
+                  <span className="px-3 py-0.5 text-xs bg-blue-50 text-blue-700 rounded-md font-semibold min-w-[48px] text-center">
+                    {currentReqPage} / {totalReqPages}
+                  </span>
+                  <button
+                    onClick={() => setReqPage(p => Math.min(totalReqPages, p + 1))}
+                    disabled={currentReqPage === totalReqPages}
+                    className="p-1.5 rounded-lg text-gray-500 hover:bg-gray-100 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+                    aria-label="Next page"
+                  >
+                    <ChevronRight size={16} />
+                  </button>
+                </div>
+              </div>
+            )}
           </div>
         )}
 
         {/* ===== AUDITS TAB ===== */}
         {activeTab === 'audits' && (
           <div className="space-y-4">
-            {audits.map((audit) => (
+            {pagedAudits.map((audit) => (
               <div key={audit.id} className="bg-white rounded-xl border border-gray-100 p-5 hover:shadow-sm transition-shadow">
                 <div className="flex items-start justify-between">
                   <div className="flex-1">
@@ -1002,6 +1072,37 @@ export default function Compliance() {
                 </div>
               </div>
             ))}
+
+            {/* Paginator */}
+            {totalAuditPages > 1 && (
+              <div className="flex items-center justify-between px-6 py-3.5 border border-gray-100 bg-white rounded-xl shadow-sm">
+                <span className="text-xs text-gray-500 font-medium">
+                  Showing {Math.min((currentAuditPage - 1) * AUDIT_PER_PAGE + 1, audits.length)}–
+                  {Math.min(currentAuditPage * AUDIT_PER_PAGE, audits.length)} of {audits.length} audits
+                </span>
+                <div className="flex items-center gap-1.5">
+                  <button
+                    onClick={() => setAuditPage(p => Math.max(1, p - 1))}
+                    disabled={currentAuditPage === 1}
+                    className="p-1.5 rounded-lg text-gray-500 hover:bg-gray-100 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+                    aria-label="Previous page"
+                  >
+                    <ChevronLeft size={16} />
+                  </button>
+                  <span className="px-3 py-0.5 text-xs bg-blue-50 text-blue-700 rounded-md font-semibold min-w-[48px] text-center">
+                    {currentAuditPage} / {totalAuditPages}
+                  </span>
+                  <button
+                    onClick={() => setAuditPage(p => Math.min(totalAuditPages, p + 1))}
+                    disabled={currentAuditPage === totalAuditPages}
+                    className="p-1.5 rounded-lg text-gray-500 hover:bg-gray-100 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+                    aria-label="Next page"
+                  >
+                    <ChevronRight size={16} />
+                  </button>
+                </div>
+              </div>
+            )}
           </div>
         )}
 
@@ -1215,9 +1316,10 @@ export default function Compliance() {
 
         {/* Footer */}
         <div className="text-center py-6 text-xs text-gray-400 border-t border-gray-100 mt-8">
-          MpoweredCare © 2026 — Internal Use Only
+          Powered by MployUs
         </div>
-      </main>
+      </div>
+    </main>
 
       {/* Modals */}
       <AddAuditModal isOpen={showAddAudit} onClose={() => setShowAddAudit(false)} />

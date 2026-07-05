@@ -23,14 +23,16 @@ import {
   Palette,
   BookOpen,
   CheckCircle,
-  XCircle,
+  XCircle, Trash2,
   Eye,
   Edit,
   MoreVertical,
   TrendingUp,
   Activity as ActivityIcon,
   MapPin,
-  Star
+  Star,
+  ChevronLeft,
+  ChevronRight
 } from 'lucide-react';
 import { useState } from 'react';
 
@@ -45,9 +47,10 @@ export default function Activities() {
   const [viewMode, setViewMode] = useState<'upcoming' | 'today' | 'completed'>('today');
   const [filterType, setFilterType] = useState<string>('');
   const [filterLocation, setFilterLocation] = useState<string>('');
-  const [openDropdown, setOpenDropdown] = useState<number | null>(null);
+  // State for 3‑dot actions menu
+  const [openMenuId, setOpenMenuId] = useState<null | number>(null);
 
-  const activities = [
+  const initialActivities = [
     {
       id: 1,
       name: 'Group Therapy Session',
@@ -220,6 +223,10 @@ export default function Activities() {
     },
   ];
 
+  const [activities, setActivities] = useState(initialActivities);
+  const [activitiesPage, setActivitiesPage] = useState(1);
+  const ACTIVITIES_PER_PAGE = 6;
+
   const stats = {
     totalActivities: 24,
     todayActivities: 8,
@@ -241,6 +248,13 @@ export default function Activities() {
       true;
     return matchesSearch && matchesType && matchesLocation && matchesView;
   });
+
+  const totalActivitiesPages = Math.max(1, Math.ceil(filteredActivities.length / ACTIVITIES_PER_PAGE));
+  const currentActivitiesPage = Math.min(activitiesPage, totalActivitiesPages);
+  const pagedActivities = filteredActivities.slice(
+    (currentActivitiesPage - 1) * ACTIVITIES_PER_PAGE,
+    currentActivitiesPage * ACTIVITIES_PER_PAGE
+  );
 
   const getStatusBadge = (status: string) => {
     switch(status) {
@@ -299,193 +313,197 @@ export default function Activities() {
       <Sidebar activeItem="Activities" />
       <TopBar />
       
-      <main className="ml-64 pt-24 px-8 pb-8">
-        {/* Header */}
-        <div className="flex items-center justify-between mb-6">
-          <div>
-            <h1 className="text-3xl text-gray-900">Activities & Programs</h1>
-            <p className="text-sm text-gray-600 mt-1">Manage therapeutic, recreational, and educational activities for service users</p>
+      <main className="ml-0 md:ml-64 pt-20 px-4 md:px-8 pb-8 transition-all duration-300">
+        <div className="max-w-[1600px] mx-auto w-full">
+          {/* Header */}
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
+            <div>
+              <h1 className="text-3xl text-gray-900">Activities & Programs</h1>
+              <p className="text-sm text-gray-600 mt-1">Manage therapeutic, recreational, and educational activities for service users</p>
+            </div>
+            <div className="flex flex-wrap items-center gap-3">
+              <button 
+                className="flex items-center gap-2 px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors text-sm font-medium"
+                onClick={() => setShowParticipantList(true)}
+              >
+                <Users size={18} />
+                <span className="text-sm">View Participants</span>
+              </button>
+              <button 
+                className="flex items-center gap-2 px-4 py-2 bg-gray-50 border border-gray-100 rounded-lg hover:bg-gray-100 transition-colors text-sm text-gray-700 font-medium"
+                onClick={() => {
+                  const data = JSON.stringify(activities, null, 2);
+                  const blob = new Blob([data], { type: 'application/json' });
+                  const url = URL.createObjectURL(blob);
+                  const a = document.createElement('a');
+                  a.href = url;
+                  a.download = `activities-report-${new Date().toISOString().slice(0, 10)}.json`;
+                  a.click();
+                  URL.revokeObjectURL(url);
+                }}
+              >
+                <Download size={18} className="text-gray-600" />
+                <span className="text-sm">Export Report</span>
+              </button>
+              <button 
+                className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm font-semibold shadow-sm"
+                onClick={() => setShowAddActivity(true)}
+              >
+                <Plus size={20} />
+                Add Activity
+              </button>
+            </div>
           </div>
-          <div className="flex items-center gap-3">
-            <button 
-              className="flex items-center gap-2 px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors"
-              onClick={() => setShowParticipantList(true)}
-            >
-              <Users size={18} />
-              <span className="text-sm">View Participants</span>
-            </button>
-            <button 
-              className="flex items-center gap-2 px-4 py-2 bg-gray-50 border border-gray-100 rounded-lg hover:bg-gray-100 transition-colors"
-              onClick={() => {
-                const data = JSON.stringify(activities, null, 2);
-                const blob = new Blob([data], { type: 'application/json' });
-                const url = URL.createObjectURL(blob);
-                const a = document.createElement('a');
-                a.href = url;
-                a.download = `activities-report-${new Date().toISOString().slice(0, 10)}.json`;
-                a.click();
-                URL.revokeObjectURL(url);
-              }}
-            >
-              <Download size={18} className="text-gray-600" />
-              <span className="text-sm text-gray-700">Export Report</span>
-            </button>
-            <button 
-              className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
-              onClick={() => setShowAddActivity(true)}
-            >
-              <Plus size={20} />
-              Add Activity
-            </button>
+
+          {/* Summary Stats */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-6 mb-6">
+            <Card>
+              <div className="flex items-center justify-between">
+                <div>
+                  <div className="text-sm text-gray-600 mb-1">Total Activities</div>
+                  <div className="text-2xl text-gray-900">{stats.totalActivities}</div>
+                </div>
+                <Calendar size={32} className="text-blue-600" />
+              </div>
+            </Card>
+            <Card>
+              <div className="flex items-center justify-between">
+                <div>
+                  <div className="text-sm text-gray-600 mb-1">Today</div>
+                  <div className="text-2xl text-gray-900">{stats.todayActivities}</div>
+                </div>
+                <ActivityIcon size={32} className="text-green-600" />
+              </div>
+            </Card>
+            <Card>
+              <div className="flex items-center justify-between">
+                <div>
+                  <div className="text-sm text-gray-600 mb-1">Active Participants</div>
+                  <div className="text-2xl text-gray-900">{stats.activeParticipants}</div>
+                </div>
+                <Users size={32} className="text-purple-600" />
+              </div>
+            </Card>
+            <Card>
+              <div className="flex items-center justify-between">
+                <div>
+                  <div className="text-sm text-gray-600 mb-1">Completion Rate</div>
+                  <div className="text-2xl text-gray-900">{stats.completionRate}%</div>
+                </div>
+                <CheckCircle size={32} className="text-green-600" />
+              </div>
+            </Card>
+            <Card>
+              <div className="flex items-center justify-between">
+                <div>
+                  <div className="text-sm text-gray-600 mb-1">Avg Engagement</div>
+                  <div className="text-2xl text-gray-900">{stats.averageEngagement}/5</div>
+                </div>
+                <Star size={32} className="text-amber-600" />
+              </div>
+            </Card>
+            <Card>
+              <div className="flex items-center justify-between">
+                <div>
+                  <div className="text-sm text-gray-600 mb-1">This Week</div>
+                  <div className="text-2xl text-gray-900">{stats.upcomingThisWeek}</div>
+                </div>
+                <TrendingUp size={32} className="text-blue-600" />
+              </div>
+            </Card>
           </div>
-        </div>
 
-        {/* Summary Stats */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-6 mb-6">
-          <Card>
-            <div className="flex items-center justify-between">
-              <div>
-                <div className="text-sm text-gray-600 mb-1">Total Activities</div>
-                <div className="text-2xl text-gray-900">{stats.totalActivities}</div>
-              </div>
-              <Calendar size={32} className="text-blue-600" />
+          {/* View Mode Toggle */}
+          <div className="flex items-center justify-between mb-6">
+            <div className="flex items-center gap-2 bg-white rounded-lg p-1 border border-gray-200">
+              <button 
+                className={`px-4 py-2 text-sm rounded ${viewMode === 'today' ? 'bg-blue-600 text-white' : 'text-gray-600 hover:bg-gray-50'}`}
+                onClick={() => setViewMode('today')}
+              >
+                Today
+              </button>
+              <button 
+                className={`px-4 py-2 text-sm rounded ${viewMode === 'upcoming' ? 'bg-blue-600 text-white' : 'text-gray-600 hover:bg-gray-50'}`}
+                onClick={() => setViewMode('upcoming')}
+              >
+                Upcoming
+              </button>
+              <button 
+                className={`px-4 py-2 text-sm rounded ${viewMode === 'completed' ? 'bg-blue-600 text-white' : 'text-gray-600 hover:bg-gray-50'}`}
+                onClick={() => setViewMode('completed')}
+              >
+                Completed
+              </button>
             </div>
-          </Card>
-          <Card>
-            <div className="flex items-center justify-between">
-              <div>
-                <div className="text-sm text-gray-600 mb-1">Today</div>
-                <div className="text-2xl text-gray-900">{stats.todayActivities}</div>
-              </div>
-              <ActivityIcon size={32} className="text-green-600" />
-            </div>
-          </Card>
-          <Card>
-            <div className="flex items-center justify-between">
-              <div>
-                <div className="text-sm text-gray-600 mb-1">Active Participants</div>
-                <div className="text-2xl text-gray-900">{stats.activeParticipants}</div>
-              </div>
-              <Users size={32} className="text-purple-600" />
-            </div>
-          </Card>
-          <Card>
-            <div className="flex items-center justify-between">
-              <div>
-                <div className="text-sm text-gray-600 mb-1">Completion Rate</div>
-                <div className="text-2xl text-gray-900">{stats.completionRate}%</div>
-              </div>
-              <CheckCircle size={32} className="text-green-600" />
-            </div>
-          </Card>
-          <Card>
-            <div className="flex items-center justify-between">
-              <div>
-                <div className="text-sm text-gray-600 mb-1">Avg Engagement</div>
-                <div className="text-2xl text-gray-900">{stats.averageEngagement}/5</div>
-              </div>
-              <Star size={32} className="text-amber-600" />
-            </div>
-          </Card>
-          <Card>
-            <div className="flex items-center justify-between">
-              <div>
-                <div className="text-sm text-gray-600 mb-1">This Week</div>
-                <div className="text-2xl text-gray-900">{stats.upcomingThisWeek}</div>
-              </div>
-              <TrendingUp size={32} className="text-blue-600" />
-            </div>
-          </Card>
-        </div>
-
-        {/* View Mode Toggle */}
-        <div className="flex items-center justify-between mb-6">
-          <div className="flex items-center gap-2 bg-white rounded-lg p-1 border border-gray-200">
-            <button 
-              className={`px-4 py-2 text-sm rounded ${viewMode === 'today' ? 'bg-blue-600 text-white' : 'text-gray-600 hover:bg-gray-50'}`}
-              onClick={() => setViewMode('today')}
-            >
-              Today
-            </button>
-            <button 
-              className={`px-4 py-2 text-sm rounded ${viewMode === 'upcoming' ? 'bg-blue-600 text-white' : 'text-gray-600 hover:bg-gray-50'}`}
-              onClick={() => setViewMode('upcoming')}
-            >
-              Upcoming
-            </button>
-            <button 
-              className={`px-4 py-2 text-sm rounded ${viewMode === 'completed' ? 'bg-blue-600 text-white' : 'text-gray-600 hover:bg-gray-50'}`}
-              onClick={() => setViewMode('completed')}
-            >
-              Completed
-            </button>
           </div>
-        </div>
 
-        {/* Filters & Search */}
-        <Card className="mb-6">
-          <div className="flex items-center gap-4">
-            {/* Search */}
-            <div className="flex-1 relative">
-              <Search size={18} className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
-              <input
-                type="text"
-                placeholder="Search by activity name or facilitator..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full pl-10 pr-4 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:border-blue-500"
-              />
+          {/* Filters & Search */}
+          <Card className="mb-6">
+            <div className="flex flex-col lg:flex-row lg:items-center gap-4">
+              {/* Search */}
+              <div className="flex-1 relative">
+                <Search size={18} className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
+                <input
+                  type="text"
+                  placeholder="Search by activity name or facilitator..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="w-full pl-10 pr-4 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:border-blue-500"
+                />
+              </div>
+
+              {/* Dropdown Filters row */}
+              <div className="flex flex-wrap items-center gap-4">
+                {/* Type Filter */}
+                <select
+                  value={filterType}
+                  onChange={(e) => setFilterType(e.target.value)}
+                  className="px-4 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:border-blue-500"
+                >
+                  <option value="">All Types</option>
+                  <option value="Therapeutic">Therapeutic</option>
+                  <option value="Creative">Creative</option>
+                  <option value="Physical">Physical</option>
+                  <option value="Educational">Educational</option>
+                  <option value="Social">Social</option>
+                  <option value="Recreational">Recreational</option>
+                  <option value="Life Skills">Life Skills</option>
+                </select>
+
+                {/* Location Filter */}
+                <select
+                  value={filterLocation}
+                  onChange={(e) => setFilterLocation(e.target.value)}
+                  className="px-4 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:border-blue-500"
+                >
+                  <option value="">All Locations</option>
+                  <option value="Therapy Room">Therapy Room</option>
+                  <option value="Art Studio">Art Studio</option>
+                  <option value="Garden">Garden</option>
+                  <option value="Music Room">Music Room</option>
+                  <option value="Library">Library</option>
+                  <option value="Common Room">Common Room</option>
+                  <option value="Kitchen">Kitchen</option>
+                  <option value="Quiet Room">Quiet Room</option>
+                </select>
+
+                <button className="p-2 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors">
+                  <Filter size={18} className="text-gray-600" />
+                </button>
+              </div>
             </div>
-
-            {/* Type Filter */}
-            <select
-              value={filterType}
-              onChange={(e) => setFilterType(e.target.value)}
-              className="px-4 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:border-blue-500"
-            >
-              <option value="">All Types</option>
-              <option value="Therapeutic">Therapeutic</option>
-              <option value="Creative">Creative</option>
-              <option value="Physical">Physical</option>
-              <option value="Educational">Educational</option>
-              <option value="Social">Social</option>
-              <option value="Recreational">Recreational</option>
-              <option value="Life Skills">Life Skills</option>
-            </select>
-
-            {/* Location Filter */}
-            <select
-              value={filterLocation}
-              onChange={(e) => setFilterLocation(e.target.value)}
-              className="px-4 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:border-blue-500"
-            >
-              <option value="">All Locations</option>
-              <option value="Therapy Room">Therapy Room</option>
-              <option value="Art Studio">Art Studio</option>
-              <option value="Garden">Garden</option>
-              <option value="Music Room">Music Room</option>
-              <option value="Library">Library</option>
-              <option value="Common Room">Common Room</option>
-              <option value="Kitchen">Kitchen</option>
-              <option value="Quiet Room">Quiet Room</option>
-            </select>
-
-            <button className="p-2 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors">
-              <Filter size={18} className="text-gray-600" />
-            </button>
-          </div>
-        </Card>
+          </Card>
 
         {/* Activities Grid */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
-          {filteredActivities.map((activity) => {
+          {pagedActivities.map((activity) => {
             const Icon = activity.icon;
             return (
               <Card key={activity.id} className="hover:shadow-lg transition-shadow">
                 <div className="flex items-start justify-between mb-4">
                   <div className="flex items-center gap-3">
                     <div className={`w-12 h-12 rounded-lg flex items-center justify-center ${getTypeColor(activity.color)}`}>
-                      <Icon size={24} />
+                       <Icon size={24} />
                     </div>
                     <div>
                       <h3 className="text-gray-900">{activity.name}</h3>
@@ -493,59 +511,60 @@ export default function Activities() {
                     </div>
                   </div>
                   <div className="relative">
-                    <button 
-                      className="p-1 hover:bg-gray-100 rounded transition-colors"
-                      onClick={() => setOpenDropdown(openDropdown === activity.id ? null : activity.id)}
+                    <button
+                      className="flex items-center p-1 text-gray-500 hover:text-gray-700"
+                      onClick={() => setOpenMenuId(openMenuId === activity.id ? null : activity.id)}
                     >
-                      <MoreVertical size={16} className="text-gray-400" />
+                      <MoreVertical size={18} />
                     </button>
-                    {openDropdown === activity.id && (
-                      <div className="absolute right-0 mt-2 w-48 bg-white rounded-lg border border-gray-100 shadow-lg z-10">
-                        <button 
-                          className="w-full flex items-center gap-2 px-4 py-2 text-sm text-gray-700 hover:bg-gray-50"
+                    {openMenuId === activity.id && (
+                      <div className="absolute right-0 mt-2 w-48 bg-white border border-gray-200 rounded-md shadow-lg z-10">
+                        <button
+                          className="flex w-full items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-50"
                           onClick={() => {
                             console.log('View details:', activity.id);
-                            setOpenDropdown(null);
                             setSelectedActivity(activity);
                             setShowActivityDetails(true);
+                            setOpenMenuId(null);
                           }}
                         >
-                          <Eye size={16} />
-                          View Details
+                          <Eye size={16} className="mr-2" />
+                          View
                         </button>
-                        <button 
-                          className="w-full flex items-center gap-2 px-4 py-2 text-sm text-gray-700 hover:bg-gray-50"
+                        <button
+                          className="flex w-full items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-50"
                           onClick={() => {
                             console.log('Edit activity:', activity.id);
-                            setOpenDropdown(null);
                             setSelectedActivity(activity);
                             setShowEditActivity(true);
+                            setOpenMenuId(null);
                           }}
                         >
-                          <Edit size={16} />
-                          Edit Activity
+                          <Edit size={16} className="mr-2" />
+                          Edit
                         </button>
-                        <button 
-                          className="w-full flex items-center gap-2 px-4 py-2 text-sm text-gray-700 hover:bg-gray-50"
+                        <button
+                          className="flex w-full items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-50"
                           onClick={() => {
                             console.log('Record attendance:', activity.id);
-                            setOpenDropdown(null);
                             setSelectedActivity(activity);
                             setShowRecordAttendance(true);
+                            setOpenMenuId(null);
                           }}
                         >
-                          <CheckCircle size={16} />
-                          Record Attendance
+                          <CheckCircle size={16} className="mr-2" />
+                          Attendance
                         </button>
-                        <button 
-                          className="w-full flex items-center gap-2 px-4 py-2 text-sm text-red-600 hover:bg-gray-50 border-t border-gray-100"
+                        <button
+                          className="flex w-full items-center px-4 py-2 text-sm text-red-600 hover:bg-gray-50"
                           onClick={() => {
-                            console.log('Cancel activity:', activity.id);
-                            setOpenDropdown(null);
+                            console.log('Delete activity:', activity.id);
+                            setActivities(prev => prev.filter(a => a.id !== activity.id));
+                            setOpenMenuId(null);
                           }}
                         >
-                          <XCircle size={16} />
-                          Cancel Activity
+                          <Trash2 size={16} className="mr-2" />
+                          Delete
                         </button>
                       </div>
                     )}
@@ -626,6 +645,37 @@ export default function Activities() {
           })}
         </div>
 
+        {/* Paginator */}
+        {totalActivitiesPages > 1 && (
+          <div className="flex items-center justify-between pt-4 mt-4 border-t border-gray-100 bg-white px-6 py-3.5 rounded-xl border border-gray-200/80 shadow-sm mb-6">
+            <span className="text-xs text-gray-500 font-medium">
+              Showing {Math.min((currentActivitiesPage - 1) * ACTIVITIES_PER_PAGE + 1, filteredActivities.length)}–
+              {Math.min(currentActivitiesPage * ACTIVITIES_PER_PAGE, filteredActivities.length)} of {filteredActivities.length} activities
+            </span>
+            <div className="flex items-center gap-1.5">
+              <button
+                onClick={() => setActivitiesPage(p => Math.max(1, p - 1))}
+                disabled={currentActivitiesPage === 1}
+                className="p-2 rounded-lg text-gray-500 hover:bg-gray-100 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+                aria-label="Previous page"
+              >
+                <ChevronLeft size={16} />
+              </button>
+              <span className="px-3.5 py-1 text-xs bg-purple-50 text-purple-700 rounded-md font-semibold min-w-[56px] text-center">
+                {currentActivitiesPage} / {totalActivitiesPages}
+              </span>
+              <button
+                onClick={() => setActivitiesPage(p => Math.min(totalActivitiesPages, p + 1))}
+                disabled={currentActivitiesPage === totalActivitiesPages}
+                className="p-2 rounded-lg text-gray-500 hover:bg-gray-100 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+                aria-label="Next page"
+              >
+                <ChevronRight size={16} />
+              </button>
+            </div>
+          </div>
+        )}
+
         {/* Empty State */}
         {filteredActivities.length === 0 && (
           <Card className="text-center py-12">
@@ -639,9 +689,10 @@ export default function Activities() {
 
         {/* Footer */}
         <div className="text-center py-6 text-xs text-gray-500 border-t border-gray-100 mt-8">
-          MpoweredCare © 2025 — Internal Use Only
+          Powered by MployUs
         </div>
-      </main>
+      </div>
+    </main>
 
       {/* Modals */}
       <AddActivityModal

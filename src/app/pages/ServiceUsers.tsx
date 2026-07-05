@@ -15,6 +15,7 @@ import {
   AlertCircle,
   Clock,
   ChevronRight,
+  ChevronLeft,
   MoreVertical,
   MapPin,
   Phone,
@@ -41,6 +42,11 @@ export default function ServiceUsers() {
   const [profileUserId, setProfileUserId] = useState<number | null>(null);
   const [serviceUsers, setServiceUsers] = useState<ServiceUser[]>([]);
   const [loading, setLoading] = useState(true);
+  const [page, setPage] = useState(1);
+  const USERS_PER_PAGE = 8;
+
+  const totalPages = Math.ceil(serviceUsers.length / USERS_PER_PAGE);
+  const paginatedUsers = serviceUsers.slice((page - 1) * USERS_PER_PAGE, page * USERS_PER_PAGE);
 
   useEffect(() => {
     let active = true;
@@ -82,18 +88,19 @@ export default function ServiceUsers() {
       <Sidebar activeItem="Service Users" />
       <TopBar />
       
-      <main className="ml-64 pt-24 px-8 pb-8">
-        {/* Header */}
-        <div className="flex items-center justify-between mb-6">
-          <div>
-            <h1 className="text-3xl text-gray-900">Service Users</h1>
-            <p className="text-sm text-gray-600 mt-1">Manage and monitor all children in care</p>
+      <main className="ml-0 md:ml-64 pt-20 px-4 md:px-8 pb-8 transition-all duration-300">
+        <div className="max-w-[1600px] mx-auto w-full">
+          {/* Header */}
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
+            <div>
+              <h1 className="text-3xl text-gray-900">Service Users</h1>
+              <p className="text-sm text-gray-600 mt-1">Manage and monitor all children in care</p>
+            </div>
+            <button className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm font-semibold shadow-sm self-start sm:self-auto" onClick={() => setShowAddModal(true)}>
+              <Plus size={20} />
+              <span>Add New Service User</span>
+            </button>
           </div>
-          <button className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors" onClick={() => setShowAddModal(true)}>
-            <Plus size={20} />
-            Add New Service User
-          </button>
-        </div>
 
         {/* Stats Row */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-6">
@@ -156,146 +163,152 @@ export default function ServiceUsers() {
 
         {/* Service Users Grid View */}
         {viewMode === 'grid' && (
-          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
-            {serviceUsers.map((user) => (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+            {paginatedUsers.map((user) => (
               <Card 
                 key={user.id} 
-                className="hover:border-blue-200 transition-colors cursor-pointer"
+                className="hover:shadow-md hover:border-blue-200 transition-all duration-300 cursor-pointer flex flex-col justify-between p-5 bg-white border border-gray-150 rounded-2xl relative"
                 onClick={() => {
                   setProfileUserId(user.id);
                   setShowProfile(true);
                 }}
               >
-                {/* Header */}
-                <div className="flex items-start justify-between mb-4">
-                  <div className="flex items-center gap-3">
-                    <div className="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center text-2xl">
-                      {user.photo}
+                <div>
+                  {/* Card Header */}
+                  <div className="flex items-start justify-between mb-4">
+                    <div className="flex items-center gap-3">
+                      <div className="w-12 h-12 bg-gradient-to-tr from-blue-50 to-indigo-50 border border-blue-100/60 rounded-full flex items-center justify-center text-2xl shadow-sm">
+                        {user.photo}
+                      </div>
+                      <div>
+                        <h3 className="text-base font-bold text-gray-900 leading-tight">{user.name}</h3>
+                        <p className="text-xs text-gray-400 mt-0.5 font-medium">Age {user.age} · ID: SU-{user.id.toString().padStart(4, '0')}</p>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-1.5" onClick={(e) => e.stopPropagation()}>
+                      <Badge variant={user.riskLevel}>
+                        {user.riskLevel === 'red' ? 'High Risk' : user.riskLevel === 'amber' ? 'Medium Risk' : 'Low Risk'}
+                      </Badge>
+                      <div className="relative">
+                        <button 
+                          className="p-1.5 hover:bg-gray-100 rounded-lg transition-colors"
+                          onClick={() => setOpenDropdown(openDropdown === user.id ? null : user.id)}
+                        >
+                          <MoreVertical size={15} className="text-gray-400" />
+                        </button>
+                        {openDropdown === user.id && (
+                          <div className="absolute right-0 mt-2 w-48 bg-white rounded-xl border border-gray-100 shadow-lg z-10 py-1">
+                            <button 
+                              className="w-full flex items-center gap-2 px-4 py-2 text-sm text-gray-700 hover:bg-gray-50"
+                              onClick={() => {
+                                setProfileUserId(user.id);
+                                setShowProfile(true);
+                                setOpenDropdown(null);
+                              }}
+                            >
+                              <Eye size={15} />
+                              View Profile
+                            </button>
+                            <button 
+                              className="w-full flex items-center gap-2 px-4 py-2 text-sm text-gray-700 hover:bg-gray-50"
+                              onClick={() => {
+                                console.log('Edit user:', user.id);
+                                setOpenDropdown(null);
+                              }}
+                            >
+                              <Edit size={15} />
+                              Edit Details
+                            </button>
+                            <button 
+                              className="w-full flex items-center gap-2 px-4 py-2 text-sm text-gray-700 hover:bg-gray-50"
+                              onClick={() => {
+                                console.log('View care plan:', user.id);
+                                setOpenDropdown(null);
+                              }}
+                            >
+                              <FileText size={15} />
+                              Care Plan
+                            </button>
+                            <button 
+                              className="w-full flex items-center gap-2 px-4 py-2 text-sm text-red-600 hover:bg-red-50 border-t border-gray-100 mt-1"
+                              onClick={() => {
+                                console.log('Delete user:', user.id);
+                                setOpenDropdown(null);
+                              }}
+                            >
+                              <Trash2 size={15} />
+                              Remove
+                            </button>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Info list */}
+                  <div className="space-y-2 mb-4 border-t border-gray-50 pt-3">
+                    <div className="flex items-center gap-2 text-xs font-medium text-gray-500">
+                      <MapPin size={14} className="text-gray-400 shrink-0" />
+                      <span className="truncate">{user.location}</span>
+                    </div>
+                    <div className="flex items-center gap-2 text-xs font-medium text-gray-500">
+                      <User size={14} className="text-gray-400 shrink-0" />
+                      <span className="truncate">Manager: {user.careManager}</span>
+                    </div>
+                    <div className="flex items-center gap-2 text-xs font-medium text-gray-500">
+                      <Phone size={14} className="text-gray-400 shrink-0" />
+                      <span>{user.phone}</span>
+                    </div>
+                  </div>
+
+                  {/* Conditions */}
+                  <div className="mb-4">
+                    <div className="text-[10px] uppercase tracking-wider font-semibold text-gray-400 mb-1.5">Conditions</div>
+                    <div className="flex flex-wrap gap-1.5">
+                      {user.conditions.map((condition, idx) => (
+                        <span key={idx} className="inline-block text-[11px] px-2.5 py-0.5 font-semibold bg-gray-100 text-gray-600 rounded-full">{condition}</span>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Current Mood & Last Incident Grid */}
+                  <div className="grid grid-cols-2 gap-3 mb-4 p-3 bg-gray-50/50 border border-gray-100 rounded-xl">
+                    <div>
+                      <div className="text-[10px] uppercase tracking-wider font-semibold text-gray-400">Current Mood</div>
+                      <div className="flex items-center gap-1.5 mt-1">
+                        <span className="text-xl">{user.mood}</span>
+                        <span className="text-xs font-bold text-gray-700 capitalize">{user.mood === '😊' ? 'happy' : user.mood === '😐' ? 'neutral' : 'unhappy'}</span>
+                      </div>
                     </div>
                     <div>
-                      <h3 className="text-base text-gray-900">{user.name}</h3>
-                      <p className="text-xs text-gray-600">Age {user.age} • ID: SU-{user.id.toString().padStart(4, '0')}</p>
+                      <div className="text-[10px] uppercase tracking-wider font-semibold text-gray-400">Last Incident</div>
+                      <div className="text-xs font-bold text-gray-700 truncate mt-1">{user.lastIncident || 'None'}</div>
                     </div>
                   </div>
-                  <div className="flex items-center gap-2" onClick={(e) => e.stopPropagation()}>
-                    <Badge variant={user.riskLevel}>
-                      {user.riskLevel === 'red' ? 'High' : user.riskLevel === 'amber' ? 'Medium' : 'Low'}
-                    </Badge>
-                    <div className="relative">
-                      <button 
-                        className="p-1 hover:bg-gray-100 rounded"
-                        onClick={() => setOpenDropdown(openDropdown === user.id ? null : user.id)}
-                      >
-                        <MoreVertical size={16} className="text-gray-400" />
-                      </button>
-                      {openDropdown === user.id && (
-                        <div className="absolute right-0 mt-2 w-48 bg-white rounded-lg border border-gray-100 shadow-lg z-10">
-                          <button 
-                            className="w-full flex items-center gap-2 px-4 py-2 text-sm text-gray-700 hover:bg-gray-50"
-                            onClick={() => {
-                              setProfileUserId(user.id);
-                              setShowProfile(true);
-                              setOpenDropdown(null);
-                            }}
-                          >
-                            <Eye size={16} />
-                            View Profile
-                          </button>
-                          <button 
-                            className="w-full flex items-center gap-2 px-4 py-2 text-sm text-gray-700 hover:bg-gray-50"
-                            onClick={() => {
-                              console.log('Edit user:', user.id);
-                              setOpenDropdown(null);
-                            }}
-                          >
-                            <Edit size={16} />
-                            Edit Details
-                          </button>
-                          <button 
-                            className="w-full flex items-center gap-2 px-4 py-2 text-sm text-gray-700 hover:bg-gray-50"
-                            onClick={() => {
-                              console.log('View care plan:', user.id);
-                              setOpenDropdown(null);
-                            }}
-                          >
-                            <FileText size={16} />
-                            Care Plan
-                          </button>
-                          <button 
-                            className="w-full flex items-center gap-2 px-4 py-2 text-sm text-red-600 hover:bg-red-50 border-t border-gray-100"
-                            onClick={() => {
-                              console.log('Delete user:', user.id);
-                              setOpenDropdown(null);
-                            }}
-                          >
-                            <Trash2 size={16} />
-                            Remove
-                          </button>
-                        </div>
-                      )}
+
+                  {/* Review Alert */}
+                  <div 
+                    className="flex items-center justify-between p-2.5 bg-blue-50/50 hover:bg-blue-50 border border-blue-100/50 rounded-xl cursor-pointer transition-colors"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      console.log('View review for:', user.id);
+                    }}
+                  >
+                    <div className="flex items-center gap-2.5 min-w-0">
+                      <Calendar size={15} className="text-blue-500 shrink-0" />
+                      <div className="min-w-0">
+                        <div className="text-[10px] font-semibold text-blue-500 uppercase tracking-wider">Review Due</div>
+                        <div className="text-xs font-bold text-blue-700 truncate">{user.upcomingReview}</div>
+                      </div>
                     </div>
+                    <ChevronRight size={14} className="text-blue-500 shrink-0" />
                   </div>
                 </div>
 
-                {/* Info Grid */}
-                <div className="space-y-3 mb-4">
-                  <div className="flex items-center gap-2 text-sm">
-                    <MapPin size={16} className="text-gray-400" />
-                    <span className="text-gray-700">{user.location}</span>
-                  </div>
-                  <div className="flex items-center gap-2 text-sm">
-                    <User size={16} className="text-gray-400" />
-                    <span className="text-gray-700">{user.careManager}</span>
-                  </div>
-                  <div className="flex items-center gap-2 text-sm">
-                    <Phone size={16} className="text-gray-400" />
-                    <span className="text-gray-700">{user.phone}</span>
-                  </div>
-                </div>
-
-                {/* Conditions */}
-                <div className="mb-4">
-                  <div className="text-xs text-gray-600 mb-2">Conditions:</div>
-                  <div className="flex flex-wrap gap-2">
-                    {user.conditions.map((condition, idx) => (
-                      <Badge key={idx} variant="gray">{condition}</Badge>
-                    ))}
-                  </div>
-                </div>
-
-                {/* Status Row */}
-                <div className="grid grid-cols-2 gap-4 mb-4 pt-4 border-t border-gray-100">
-                  <div>
-                    <div className="text-xs text-gray-600">Current Mood</div>
-                    <div className="flex items-center gap-2 mt-1">
-                      <span className="text-2xl">{user.mood}</span>
-                    </div>
-                  </div>
-                  <div>
-                    <div className="text-xs text-gray-600">Last Incident</div>
-                    <div className="text-sm text-gray-900 mt-1">{user.lastIncident}</div>
-                  </div>
-                </div>
-
-                {/* Review Alert */}
-                <div 
-                  className="flex items-center justify-between p-3 bg-blue-50 rounded-lg border border-blue-100 cursor-pointer hover:bg-blue-100 transition-colors"
-                  onClick={() => console.log('View review for:', user.id)}
-                >
-                  <div className="flex items-center gap-2">
-                    <Calendar size={16} className="text-blue-600" />
-                    <div>
-                      <div className="text-xs text-blue-900">Review due in</div>
-                      <div className="text-sm text-blue-700">{user.upcomingReview}</div>
-                    </div>
-                  </div>
-                  <ChevronRight size={16} className="text-blue-600" />
-                </div>
-
-                {/* Actions */}
-                <div className="grid grid-cols-2 gap-2 mt-4">
+                {/* Bottom Actions */}
+                <div className="grid grid-cols-2 gap-2 mt-5 border-t border-gray-50 pt-4" onClick={(e) => e.stopPropagation()}>
                   <button 
-                    className="px-3 py-2 text-sm text-blue-600 bg-blue-50 rounded-lg hover:bg-blue-100 transition-colors"
+                    className="px-3 py-2 text-xs text-blue-600 bg-white border border-blue-200 hover:bg-blue-50 rounded-lg transition-colors font-bold"
                     onClick={() => {
                       setProfileUserId(user.id);
                       setShowProfile(true);
@@ -304,7 +317,7 @@ export default function ServiceUsers() {
                     View Profile
                   </button>
                   <button 
-                    className="px-3 py-2 text-sm text-gray-700 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors"
+                    className="px-3 py-2 text-xs text-white bg-blue-600 hover:bg-blue-700 rounded-lg transition-colors font-bold shadow-sm"
                     onClick={() => {
                       setSelectedUser(user);
                       setShowQuickLog(true);
@@ -315,6 +328,36 @@ export default function ServiceUsers() {
                 </div>
               </Card>
             ))}
+          </div>
+        )}
+
+        {viewMode === 'grid' && totalPages > 1 && (
+          <div className="flex items-center justify-between px-6 py-4 border border-gray-100 bg-white rounded-xl shadow-sm mt-6">
+            <span className="text-xs text-gray-500 font-semibold">
+              Showing {Math.min((page - 1) * USERS_PER_PAGE + 1, serviceUsers.length)}–
+              {Math.min(page * USERS_PER_PAGE, serviceUsers.length)} of {serviceUsers.length} service users
+            </span>
+            <div className="flex items-center gap-1.5">
+              <button
+                onClick={() => setPage(p => Math.max(1, p - 1))}
+                disabled={page === 1}
+                className="p-1.5 rounded-lg text-gray-500 hover:bg-gray-100 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+                aria-label="Previous page"
+              >
+                <ChevronLeft size={16} />
+              </button>
+              <span className="px-3 py-0.5 text-xs bg-blue-50 text-blue-700 rounded-md font-semibold min-w-[48px] text-center">
+                {page} / {totalPages}
+              </span>
+              <button
+                onClick={() => setPage(p => Math.min(totalPages, p + 1))}
+                disabled={page === totalPages}
+                className="p-1.5 rounded-lg text-gray-500 hover:bg-gray-100 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+                aria-label="Next page"
+              >
+                <ChevronRight size={16} />
+              </button>
+            </div>
           </div>
         )}
 
@@ -337,7 +380,7 @@ export default function ServiceUsers() {
                   </tr>
                 </thead>
                 <tbody>
-                  {serviceUsers.map((user) => (
+                  {paginatedUsers.map((user) => (
                     <tr 
                       key={user.id} 
                       className="border-b border-gray-100 hover:bg-gray-50 transition-colors cursor-pointer"
@@ -462,14 +505,45 @@ export default function ServiceUsers() {
                 </tbody>
               </table>
             </div>
+
+            {totalPages > 1 && (
+              <div className="flex items-center justify-between pt-4 mt-4 border-t border-gray-100 bg-white">
+                <span className="text-xs text-gray-500 font-semibold">
+                  Showing {Math.min((page - 1) * USERS_PER_PAGE + 1, serviceUsers.length)}–
+                  {Math.min(page * USERS_PER_PAGE, serviceUsers.length)} of {serviceUsers.length} service users
+                </span>
+                <div className="flex items-center gap-1.5">
+                  <button
+                    onClick={() => setPage(p => Math.max(1, p - 1))}
+                    disabled={page === 1}
+                    className="p-1.5 rounded-lg text-gray-500 hover:bg-gray-100 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+                    aria-label="Previous page"
+                  >
+                    <ChevronLeft size={16} />
+                  </button>
+                  <span className="px-3 py-0.5 text-xs bg-blue-50 text-blue-700 rounded-md font-semibold min-w-[48px] text-center">
+                    {page} / {totalPages}
+                  </span>
+                  <button
+                    onClick={() => setPage(p => Math.min(totalPages, p + 1))}
+                    disabled={page === totalPages}
+                    className="p-1.5 rounded-lg text-gray-500 hover:bg-gray-100 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+                    aria-label="Next page"
+                  >
+                    <ChevronRight size={16} />
+                  </button>
+                </div>
+              </div>
+            )}
           </Card>
         )}
 
         {/* Footer */}
         <div className="text-center py-6 text-xs text-gray-500 border-t border-gray-100 mt-8">
-          MpoweredCare © 2025 — Internal Use Only
+          Powered by MployUs
         </div>
-      </main>
+      </div>
+    </main>
 
       {/* Modals */}
       <AddServiceUserModal 

@@ -4,7 +4,6 @@ import { TopBar } from '../components/TopBar';
 import { Card } from '../components/Card';
 import { Badge } from '../components/Badge';
 import { useNavigation } from '../context/NavigationContext';
-import { ImageWithFallback } from '../components/figma/ImageWithFallback';
 import { AddStaffMemberModal } from '../components/AddStaffMemberModal';
 import {
   Search, Filter, Plus, Phone, Mail, FileText, CalendarDays,
@@ -36,6 +35,23 @@ function varianceLabel(scheduled: string, actual: string | null, type: 'in' | 'o
   return { label: 'On time', cls: 'text-green-600 bg-green-50' };
 }
 
+function getInitials(name: string) {
+  if (!name) return '';
+  const names = name.trim().split(/\s+/);
+  return names.length > 1
+    ? (names[0][0] + names[names.length - 1][0]).toUpperCase()
+    : (names[0][0] || '').toUpperCase();
+}
+
+function getAvatarColor(id: number) {
+  const colors = [
+    'bg-purple-500', 'bg-blue-500', 'bg-rose-500',
+    'bg-amber-500', 'bg-teal-500', 'bg-indigo-500', 'bg-pink-500', 'bg-emerald-500'
+  ];
+  const index = Math.abs(id || 0) % colors.length;
+  return colors[index];
+}
+
 export default function Staff() {
   const [searchQuery, setSearchQuery] = useState('');
   const [filterRole, setFilterRole] = useState('');
@@ -55,7 +71,7 @@ export default function Staff() {
   const [logLeaveForm, setLogLeaveForm] = useState({ staffId: '', type: 'Annual Leave', from: '', to: '', reason: '', status: 'approved' as LeaveStatus });
   const [confirmClockOut, setConfirmClockOut] = useState<ClockEvent | null>(null);
   const [clockOutNote, setClockOutNote] = useState('');
-  const [toastName, setToastName] = useState<string | null>(null);
+  const [toastMessage, setToastMessage] = useState<string | null>(null);
   const toastTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const { setCurrentPage } = useNavigation();
 
@@ -65,6 +81,7 @@ export default function Staff() {
   const [leaveRequests, setLeaveRequests] = useState<LeaveRequest[]>([]);
   const [attendanceHistory, setAttendanceHistory] = useState<HistoryRecord[]>([]);
   const [loading, setLoading] = useState(true);
+  const [leaveFilter, setLeaveFilter] = useState<'all' | 'pending' | 'approved' | 'declined'>('all');
 
   useEffect(() => {
     let active = true;
@@ -89,11 +106,23 @@ export default function Staff() {
     try {
       const updated = await api.clockOutStaff(staffId, clockOutNote);
       setClockEvents(evs => evs.map(e => e.staffId === staffId ? updated : e));
-      setToastName(updated.name);
+      setToastMessage(`${updated.name} has been clocked out`);
       if (toastTimer.current) clearTimeout(toastTimer.current);
-      toastTimer.current = setTimeout(() => setToastName(null), 3000);
+      toastTimer.current = setTimeout(() => setToastMessage(null), 3000);
       setConfirmClockOut(null);
       setClockOutNote('');
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  const adminClockIn = async (staffId: number) => {
+    try {
+      const updated = await api.clockInStaff(staffId);
+      setClockEvents(evs => evs.map(e => e.staffId === staffId ? updated : e));
+      setToastMessage(`${updated.name} has been clocked in`);
+      if (toastTimer.current) clearTimeout(toastTimer.current);
+      toastTimer.current = setTimeout(() => setToastMessage(null), 3000);
     } catch (err) {
       console.error(err);
     }
@@ -198,27 +227,28 @@ export default function Staff() {
       <Sidebar activeItem="Staff Management" />
       <TopBar />
       
-      <main className="ml-64 pt-24 px-8 pb-8">
-        {/* Header */}
-        <div className="flex items-center justify-between mb-6">
-          <div>
-            <h1 className="text-3xl text-gray-900">Staff Management</h1>
-            <p className="text-sm text-gray-600 mt-1">Manage employee records, roles, schedules, and compliance</p>
+      <main className="ml-0 md:ml-64 pt-20 px-4 md:px-8 pb-8 transition-all duration-300">
+        <div className="max-w-[1600px] mx-auto w-full">
+          {/* Header */}
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
+            <div>
+              <h1 className="text-3xl text-gray-900">Staff Management</h1>
+              <p className="text-sm text-gray-600 mt-1">Manage employee records, roles, schedules, and compliance</p>
+            </div>
+            <div className="flex items-center gap-3">
+              <button className="flex items-center gap-2 px-4 py-2 bg-gray-50 border border-gray-100 rounded-lg hover:bg-gray-100 transition-colors text-sm text-gray-700 font-medium">
+                <Download size={18} />
+                Export Directory
+              </button>
+              <button 
+                onClick={() => setShowAddModal(true)}
+                className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm font-semibold shadow-sm"
+              >
+                <Plus size={20} />
+                Add Staff Member
+              </button>
+            </div>
           </div>
-          <div className="flex items-center gap-3">
-            <button className="flex items-center gap-2 px-4 py-2 bg-gray-50 border border-gray-100 rounded-lg hover:bg-gray-100 transition-colors text-sm text-gray-700">
-              <Download size={18} />
-              Export Directory
-            </button>
-            <button 
-              onClick={() => setShowAddModal(true)}
-              className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
-            >
-              <Plus size={20} />
-              Add Staff Member
-            </button>
-          </div>
-        </div>
 
         {/* Stats Row */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-6">
@@ -387,7 +417,9 @@ export default function Staff() {
                                 <tr key={`${r.date}-${r.staffId}`} className="hover:bg-gray-50 transition-colors">
                                   <td className="py-3 px-5">
                                     <div className="flex items-center gap-3">
-                                      <ImageWithFallback src={r.avatarUrl} alt={r.name} className="w-8 h-8 rounded-full object-cover border border-gray-100 shrink-0" />
+                                      <div className={`w-8 h-8 rounded-full ${getAvatarColor(r.staffId)} flex items-center justify-center text-white text-xs font-semibold border border-gray-100 shrink-0`}>
+                                        {getInitials(r.name)}
+                                      </div>
                                       <div>
                                         <button onClick={() => setCurrentPage('staff-profile', { id: r.staffId })} className="text-sm text-blue-600 hover:underline">{r.name}</button>
                                         <div className="text-xs text-gray-400 font-mono">{r.employeeId}</div>
@@ -460,7 +492,9 @@ export default function Staff() {
                           <td className="py-3.5 px-5">
                             <div className="flex items-center gap-3">
                               <div className="relative shrink-0">
-                                <ImageWithFallback src={e.avatarUrl} alt={e.name} className="w-9 h-9 rounded-full object-cover border border-gray-100" />
+                                <div className={`w-9 h-9 rounded-full ${getAvatarColor(e.staffId)} flex items-center justify-center text-white text-xs font-semibold border border-gray-100 shrink-0`}>
+                                  {getInitials(e.name)}
+                                </div>
                                 {onShift && <span className="absolute -bottom-0.5 -right-0.5 w-3 h-3 bg-green-500 border-2 border-white rounded-full" />}
                               </div>
                               <div>
@@ -502,7 +536,17 @@ export default function Staff() {
                             <div className="flex items-center gap-2">
                               {onShift  && <span className="inline-flex items-center gap-1.5 text-xs bg-green-100 text-green-700 px-2.5 py-1 rounded-full"><span className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse" />On Shift</span>}
                               {e.clockOut && <span className="inline-flex items-center text-xs bg-gray-100 text-gray-600 px-2.5 py-1 rounded-full">Completed</span>}
-                              {notIn    && <span className="inline-flex items-center text-xs bg-amber-100 text-amber-700 px-2.5 py-1 rounded-full">Awaiting</span>}
+                              {notIn    && (
+                                <>
+                                  <span className="inline-flex items-center text-xs bg-amber-100 text-amber-700 px-2.5 py-1 rounded-full">Awaiting</span>
+                                  <button
+                                    onClick={() => adminClockIn(e.staffId)}
+                                    className="flex items-center gap-1 px-2.5 py-1 text-xs text-white bg-blue-600 hover:bg-blue-700 rounded-lg transition-colors font-semibold"
+                                  >
+                                    <LogIn size={11} /> Clock In
+                                  </button>
+                                </>
+                              )}
                               {onShift && (
                                 <button
                                   onClick={() => { setConfirmClockOut(e); setClockOutNote(''); }}
@@ -595,7 +639,9 @@ export default function Staff() {
                         <tr key={r.id} className="hover:bg-gray-50 transition-colors">
                           <td className="py-3.5 px-5">
                             <div className="flex items-center gap-3">
-                              <ImageWithFallback src={r.avatarUrl} alt={r.name} className="w-9 h-9 rounded-full object-cover border border-gray-100 shrink-0" />
+                              <div className={`w-9 h-9 rounded-full ${getAvatarColor(r.staffId)} flex items-center justify-center text-white text-xs font-semibold border border-gray-100 shrink-0`}>
+                                {getInitials(r.name)}
+                              </div>
                               <div>
                                 <button onClick={() => setCurrentPage('staff-profile', { id: r.staffId })} className="text-sm text-blue-600 hover:underline">{r.name}</button>
                                 <div className="text-xs text-gray-400">{r.role}</div>
@@ -671,7 +717,7 @@ export default function Staff() {
         <>
         {/* Search and Filters */}
         <Card className="mb-6">
-          <div className="flex items-center gap-4">
+          <div className="flex flex-col lg:flex-row lg:items-center gap-4">
             <div className="flex-1 flex items-center gap-3 bg-gray-50 rounded-lg px-4 py-2 border border-gray-100">
               <Search size={20} className="text-gray-400" />
               <input
@@ -682,46 +728,49 @@ export default function Staff() {
                 className="flex-1 bg-transparent border-none outline-none text-sm text-gray-700"
               />
             </div>
-            <button className="flex items-center gap-2 px-4 py-2 bg-gray-50 border border-gray-100 rounded-lg hover:bg-gray-100 transition-colors">
-              <Filter size={18} className="text-gray-600" />
-              <span className="text-sm text-gray-700">Filters</span>
-            </button>
-            <select
-              value={filterRole}
-              onChange={(e) => setFilterRole(e.target.value)}
-              className="px-4 py-2 bg-gray-50 border border-gray-100 rounded-lg text-sm text-gray-700 hover:bg-gray-100 transition-colors"
-            >
-              <option value="">All Roles</option>
-              <option value="Care Manager">Care Manager</option>
-              <option value="Senior Support Worker">Senior Support Worker</option>
-              <option value="Support Worker">Support Worker</option>
-              <option value="Nurse">Nurse</option>
-            </select>
-            <select
-              value={filterStatus}
-              onChange={(e) => setFilterStatus(e.target.value)}
-              className="px-4 py-2 bg-gray-50 border border-gray-100 rounded-lg text-sm text-gray-700 hover:bg-gray-100 transition-colors"
-            >
-              <option value="">All Statuses</option>
-              <option value="Active">Active</option>
-              <option value="On Leave">On Leave</option>
-              <option value="Suspended">Suspended</option>
-            </select>
-            <div className="flex items-center gap-1 border border-gray-100 rounded-lg overflow-hidden">
-              <button
-                className={`p-2 ${viewMode === 'grid' ? 'bg-blue-500 text-white' : 'bg-gray-50 text-gray-600 hover:bg-gray-100'} transition-colors`}
-                onClick={() => setViewMode('grid')}
-                title="Grid view"
-              >
-                <Grid3x3 size={18} />
+            
+            <div className="flex flex-wrap items-center gap-3">
+              <button className="flex items-center gap-2 px-4 py-2 bg-gray-50 border border-gray-100 rounded-lg hover:bg-gray-100 transition-colors">
+                <Filter size={18} className="text-gray-600" />
+                <span className="text-sm text-gray-700">Filters</span>
               </button>
-              <button
-                className={`p-2 ${viewMode === 'list' ? 'bg-blue-500 text-white' : 'bg-gray-50 text-gray-600 hover:bg-gray-100'} transition-colors`}
-                onClick={() => setViewMode('list')}
-                title="List view"
+              <select
+                value={filterRole}
+                onChange={(e) => setFilterRole(e.target.value)}
+                className="px-4 py-2 bg-gray-50 border border-gray-100 rounded-lg text-sm text-gray-700 hover:bg-gray-100 transition-colors bg-white cursor-pointer"
               >
-                <List size={18} />
-              </button>
+                <option value="">All Roles</option>
+                <option value="Care Manager">Care Manager</option>
+                <option value="Senior Support Worker">Senior Support Worker</option>
+                <option value="Support Worker">Support Worker</option>
+                <option value="Nurse">Nurse</option>
+              </select>
+              <select
+                value={filterStatus}
+                onChange={(e) => setFilterStatus(e.target.value)}
+                className="px-4 py-2 bg-gray-50 border border-gray-100 rounded-lg text-sm text-gray-700 hover:bg-gray-100 transition-colors bg-white cursor-pointer"
+              >
+                <option value="">All Statuses</option>
+                <option value="Active">Active</option>
+                <option value="On Leave">On Leave</option>
+                <option value="Suspended">Suspended</option>
+              </select>
+              <div className="flex items-center gap-1 border border-gray-100 rounded-lg overflow-hidden shrink-0">
+                <button
+                  className={`p-2 ${viewMode === 'grid' ? 'bg-blue-500 text-white' : 'bg-gray-50 text-gray-600 hover:bg-gray-100'} transition-colors`}
+                  onClick={() => setViewMode('grid')}
+                  title="Grid view"
+                >
+                  <Grid3x3 size={18} />
+                </button>
+                <button
+                  className={`p-2 ${viewMode === 'list' ? 'bg-blue-500 text-white' : 'bg-gray-50 text-gray-600 hover:bg-gray-100'} transition-colors`}
+                  onClick={() => setViewMode('list')}
+                  title="List view"
+                >
+                  <List size={18} />
+                </button>
+              </div>
             </div>
           </div>
         </Card>
@@ -738,11 +787,9 @@ export default function Staff() {
                 {/* Header */}
                 <div className="flex items-start justify-between mb-4">
                   <div className="flex items-center gap-3">
-                    <ImageWithFallback 
-                      src={staff.avatarUrl}
-                      alt={staff.name}
-                      className="w-12 h-12 rounded-full object-cover shadow-sm border border-gray-100"
-                    />
+                    <div className={`w-12 h-12 rounded-full ${getAvatarColor(staff.id)} flex items-center justify-center text-white text-base font-semibold shadow-sm border border-gray-100 shrink-0`}>
+                      {getInitials(staff.name)}
+                    </div>
                     <div>
                       <h3 className="text-base text-gray-900 font-medium">{staff.name}</h3>
                       <p className="text-xs text-gray-600">{staff.role}</p>
@@ -896,11 +943,9 @@ export default function Staff() {
                     >
                       <td className="py-4 px-6">
                         <div className="flex items-center gap-4">
-                          <ImageWithFallback 
-                            src={staff.avatarUrl}
-                            alt={staff.name}
-                            className="w-10 h-10 rounded-full object-cover shadow-sm border border-gray-100"
-                          />
+                          <div className={`w-10 h-10 rounded-full ${getAvatarColor(staff.id)} flex items-center justify-center text-white text-sm font-semibold shadow-sm border border-gray-100 shrink-0`}>
+                            {getInitials(staff.name)}
+                          </div>
                           <div>
                             <div className="font-medium text-gray-900">{staff.name}</div>
                             <div className="text-xs text-gray-600 mt-0.5">{staff.role}</div>
@@ -1023,6 +1068,7 @@ export default function Staff() {
         )}
         </>
         )}
+        </div>
       </main>
 
       <AddStaffMemberModal
@@ -1174,7 +1220,9 @@ export default function Staff() {
             </div>
             <div className="px-6 py-5 space-y-4">
               <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-xl border border-gray-100">
-                <ImageWithFallback src={detailRequest.avatarUrl} alt={detailRequest.name} className="w-10 h-10 rounded-full object-cover shrink-0" />
+                <div className={`w-10 h-10 rounded-full ${getAvatarColor(detailRequest.staffId)} flex items-center justify-center text-white text-sm font-semibold border border-gray-100 shrink-0`}>
+                  {getInitials(detailRequest.name)}
+                </div>
                 <div>
                   <p className="text-sm text-gray-900">{detailRequest.name}</p>
                   <p className="text-xs text-gray-500">{detailRequest.role}</p>
@@ -1304,7 +1352,9 @@ export default function Staff() {
             <div className="px-6 py-5 space-y-4">
               {/* Staff summary */}
               <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-xl border border-gray-100">
-                <ImageWithFallback src={confirmClockOut.avatarUrl} alt={confirmClockOut.name} className="w-10 h-10 rounded-full object-cover shrink-0" />
+                <div className={`w-10 h-10 rounded-full ${getAvatarColor(confirmClockOut.staffId)} flex items-center justify-center text-white text-sm font-semibold border border-gray-100 shrink-0`}>
+                  {getInitials(confirmClockOut.name)}
+                </div>
                 <div>
                   <p className="text-sm text-gray-900">{confirmClockOut.name}</p>
                   <p className="text-xs text-gray-500">{confirmClockOut.role} · Clocked in at {confirmClockOut.clockIn}</p>
@@ -1344,10 +1394,10 @@ export default function Staff() {
       )}
 
       {/* Success toast */}
-      {toastName && (
-        <div className="fixed bottom-6 right-6 z-50 flex items-center gap-2 bg-gray-900 text-white px-4 py-3 rounded-xl shadow-xl text-sm">
-          <LogOut size={15} className="text-green-400" />
-          {toastName} has been clocked out
+      {toastMessage && (
+        <div className="fixed bottom-6 right-6 z-50 flex items-center gap-2 bg-gray-900 text-white px-4 py-3 rounded-xl shadow-xl text-sm font-medium animate-bounce">
+          <CheckCircle size={15} className="text-green-400" />
+          {toastMessage}
         </div>
       )}
     </div>

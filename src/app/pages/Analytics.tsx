@@ -1,11 +1,13 @@
 import { Sidebar } from '../components/Sidebar';
 import { TopBar } from '../components/TopBar';
 import { Card } from '../components/Card';
+import { ExportReportModal } from '../components/ExportReportModal';
 import { useState } from 'react';
 import {
   Download, Calendar, TrendingUp, TrendingDown, Users, Clock,
   AlertCircle, CheckCircle, Pill, Activity, BarChart3, RefreshCw,
-  ChevronDown, ArrowUpRight, ArrowDownRight, FileText, Shield, Plus
+  ChevronDown, ArrowUpRight, ArrowDownRight, FileText, Shield, Plus,
+  ChevronLeft, ChevronRight
 } from 'lucide-react';
 import {
   BarChart, Bar, LineChart, Line, XAxis, YAxis, CartesianGrid,
@@ -68,9 +70,116 @@ const trainingCompliance = [
 
 const COLORS = ['#1D4ED8', '#10B981', '#F59E0B', '#EF4444', '#8B5CF6'];
 
+const PAGE_SIZE = 4;
+
+const allStaffRoles = [
+  { role: 'Support Worker', headcount: 18, fte: 16.2, vacancies: 2, fill: 90 },
+  { role: 'Senior Carer', headcount: 8, fte: 7.6, vacancies: 1, fill: 88 },
+  { role: 'Team Leader', headcount: 4, fte: 4.0, vacancies: 0, fill: 100 },
+  { role: 'Care Coordinator', headcount: 3, fte: 3.0, vacancies: 0, fill: 100 },
+  { role: 'Night Support', headcount: 5, fte: 4.5, vacancies: 1, fill: 83 },
+  { role: 'Day Services Officer', headcount: 2, fte: 2.0, vacancies: 0, fill: 100 },
+  { role: 'Activities Coordinator', headcount: 1, fte: 1.0, vacancies: 1, fill: 50 },
+  { role: 'Registered Nurse', headcount: 2, fte: 1.8, vacancies: 0, fill: 100 },
+  { role: 'Agency - Bank Staff', headcount: 3, fte: 2.1, vacancies: 0, fill: 100 },
+];
+
+const allCarePlanReviews = [
+  { user: 'Sarah Johnson', reviewer: 'Dr. Emily Carter', due: '20 Jun 2026', status: 'scheduled', daysLeft: 11 },
+  { user: 'Michael Thompson', reviewer: 'Sarah Williams', due: '5 Jun 2026', status: 'overdue', daysLeft: -4 },
+  { user: 'Oliver Parker', reviewer: 'James Mitchell', due: '8 Jun 2026', status: 'overdue', daysLeft: -1 },
+  { user: 'Emma Roberts', reviewer: 'Dr. Emily Carter', due: '1 Jul 2026', status: 'upcoming', daysLeft: 22 },
+  { user: 'Lucas Chen', reviewer: 'Sarah Williams', due: '15 Jun 2026', status: 'upcoming', daysLeft: 6 },
+  { user: 'Amelia Scott', reviewer: 'James Mitchell', due: '22 Jun 2026', status: 'upcoming', daysLeft: 13 },
+  { user: 'Noah Davies', reviewer: 'Dr. Emily Carter', due: '29 Jun 2026', status: 'scheduled', daysLeft: 20 },
+  { user: 'Isabella Wilson', reviewer: 'Sarah Williams', due: '3 Jun 2026', status: 'overdue', daysLeft: -6 },
+];
+
+const allIncidentTypes = [
+  { type: 'Behaviour / Aggression', count: 2, pct: 33 },
+  { type: 'Falls / Accidents', count: 1, pct: 17 },
+  { type: 'Self-harm', count: 1, pct: 17 },
+  { type: 'Property Damage', count: 1, pct: 17 },
+  { type: 'Medication Error', count: 1, pct: 17 },
+  { type: 'Elopement / Missing', count: 0, pct: 0 },
+  { type: 'Safeguarding Concern', count: 0, pct: 0 },
+  { type: 'Restraint Use', count: 0, pct: 0 },
+];
+
+const allRegulatoryActions = [
+  { action: 'Update Safeguarding Policy', priority: 'high', due: '15 Jun 2026', owner: 'Dr. Emily Carter' },
+  { action: 'Complete staff supervision records', priority: 'medium', due: '20 Jun 2026', owner: 'All Team Leaders' },
+  { action: 'Fire Risk Assessment renewal', priority: 'medium', due: '30 Jun 2026', owner: 'Facilities Manager' },
+  { action: 'Medication policy review', priority: 'low', due: '31 Jul 2026', owner: 'Clinical Lead' },
+  { action: 'GDPR Data Audit', priority: 'medium', due: '25 Jun 2026', owner: 'Information Governance Lead' },
+  { action: 'Staff DBS renewals', priority: 'high', due: '18 Jun 2026', owner: 'HR Manager' },
+  { action: 'CQC self-assessment update', priority: 'high', due: '1 Jul 2026', owner: 'Registered Manager' },
+  { action: 'Risk register quarterly review', priority: 'low', due: '31 Jul 2026', owner: 'Quality Lead' },
+];
+
+const allStatutoryReports = [
+  { report: 'CQC Provider Information Return', frequency: 'Annual', last: 'Apr 2026', next: 'Apr 2027' },
+  { report: 'Safeguarding Referral Log', frequency: 'Monthly', last: 'May 2026', next: 'Jun 2026' },
+  { report: 'Medication Administration Report', frequency: 'Monthly', last: 'May 2026', next: 'Jun 2026' },
+  { report: 'Notifiable Incidents (Regulation 18)', frequency: 'As required', last: 'Mar 2026', next: 'As required' },
+  { report: 'Staffing Levels Report', frequency: 'Monthly', last: 'May 2026', next: 'Jun 2026' },
+  { report: 'Accident and Incident Summary', frequency: 'Monthly', last: 'May 2026', next: 'Jun 2026' },
+  { report: 'Service User Satisfaction Survey', frequency: 'Quarterly', last: 'Mar 2026', next: 'Jun 2026' },
+  { report: 'Training Compliance Report', frequency: 'Quarterly', last: 'Mar 2026', next: 'Jun 2026' },
+];
+
+function pgSlice<T>(data: T[], page: number): T[] {
+  return data.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
+}
+function pgTotal(len: number) { return Math.max(1, Math.ceil(len / PAGE_SIZE)); }
+function pgLabel(page: number, len: number, noun: string) {
+  const from = Math.min((page - 1) * PAGE_SIZE + 1, len);
+  const to = Math.min(page * PAGE_SIZE, len);
+  return `Showing ${from}-${to} of ${len} ${noun}`;
+}
+
+function Paginator({
+  page, total, onPrev, onNext, label
+}: { page: number; total: number; onPrev: () => void; onNext: () => void; label: string }) {
+  if (total <= 1) return null;
+  return (
+    <div className="flex items-center justify-between pt-3 mt-3 border-t border-gray-100">
+      <span className="text-xs text-gray-400">{label}</span>
+      <div className="flex items-center gap-1">
+        <button
+          onClick={onPrev}
+          disabled={page === 1}
+          aria-label="Previous page"
+          className="p-1.5 rounded-lg text-gray-500 hover:bg-gray-100 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+        >
+          <ChevronLeft size={14} />
+        </button>
+        <span className="px-2.5 py-0.5 text-xs bg-blue-50 text-blue-700 rounded-md font-semibold min-w-[48px] text-center">
+          {page} / {total}
+        </span>
+        <button
+          onClick={onNext}
+          disabled={page === total}
+          aria-label="Next page"
+          className="p-1.5 rounded-lg text-gray-500 hover:bg-gray-100 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+        >
+          <ChevronRight size={14} />
+        </button>
+      </div>
+    </div>
+  );
+}
+
 export default function Analytics() {
   const [activeTab, setActiveTab] = useState<AnalyticsTab>('overview');
   const [dateRange, setDateRange] = useState('last-6-months');
+  const [staffRolePage, setStaffRolePage] = useState(1);
+  const [carePlanPage, setCarePlanPage] = useState(1);
+  const [incidentTypePage, setIncidentTypePage] = useState(1);
+  const [regActionsPage, setRegActionsPage] = useState(1);
+  const [statutoryPage, setStatutoryPage] = useState(1);
+  const [showExportModal, setShowExportModal] = useState(false);
+  const [selectedReportTitle, setSelectedReportTitle] = useState<string | undefined>(undefined);
 
   const kpis = [
     { label: 'Care Delivery Rate', value: '96.4%', trend: '+1.2%', positive: true, icon: CheckCircle },
@@ -86,33 +195,40 @@ export default function Analytics() {
       <Sidebar activeItem="Analytics" />
       <TopBar />
 
-      <main className="ml-64 pt-24 px-8 pb-8">
-        {/* Header */}
-        <div className="flex items-center justify-between mb-6">
-          <div>
-            <h1 className="text-3xl text-gray-900">Analytics & Reporting</h1>
-            <p className="text-sm text-gray-600 mt-1">KPI dashboards, trends, and regulatory reporting</p>
+      <main className="ml-0 md:ml-64 pt-20 px-4 md:px-8 pb-8 transition-all duration-300">
+        <div className="max-w-[1600px] mx-auto w-full">
+          {/* Header */}
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
+            <div>
+              <h1 className="text-3xl text-gray-900">Analytics & Reporting</h1>
+              <p className="text-sm text-gray-600 mt-1">KPI dashboards, trends, and regulatory reporting</p>
+            </div>
+            <div className="flex flex-wrap items-center gap-3">
+              <select
+                value={dateRange}
+                onChange={e => setDateRange(e.target.value)}
+                className="px-4 py-2 bg-white border border-gray-200 rounded-lg text-sm text-gray-700 cursor-pointer"
+              >
+                <option value="last-30-days">Last 30 Days</option>
+                <option value="last-3-months">Last 3 Months</option>
+                <option value="last-6-months">Last 6 Months</option>
+                <option value="year-to-date">Year to Date</option>
+                <option value="custom">Custom Range</option>
+              </select>
+              <button className="flex items-center gap-2 px-4 py-2 bg-white border border-gray-200 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors text-sm font-medium">
+                <RefreshCw size={16} /> Refresh
+              </button>
+              <button
+                onClick={() => {
+                  setSelectedReportTitle(undefined);
+                  setShowExportModal(true);
+                }}
+                className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm font-semibold shadow-sm"
+              >
+                <Download size={16} /> Export Report
+              </button>
+            </div>
           </div>
-          <div className="flex items-center gap-3">
-            <select
-              value={dateRange}
-              onChange={e => setDateRange(e.target.value)}
-              className="px-4 py-2 bg-white border border-gray-200 rounded-lg text-sm text-gray-700"
-            >
-              <option value="last-30-days">Last 30 Days</option>
-              <option value="last-3-months">Last 3 Months</option>
-              <option value="last-6-months">Last 6 Months</option>
-              <option value="year-to-date">Year to Date</option>
-              <option value="custom">Custom Range</option>
-            </select>
-            <button className="flex items-center gap-2 px-4 py-2 bg-white border border-gray-200 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors text-sm">
-              <RefreshCw size={16} /> Refresh
-            </button>
-            <button className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm">
-              <Download size={16} /> Export Report
-            </button>
-          </div>
-        </div>
 
         {/* KPI Row */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4 mb-6">
@@ -276,7 +392,10 @@ export default function Analytics() {
               </Card>
 
               <Card className="lg:col-span-2">
-                <div className="text-sm text-gray-600 mb-4">Staff Distribution by Role</div>
+                <div className="flex items-center justify-between mb-4">
+                  <div className="text-sm text-gray-600">Staff Distribution by Role</div>
+                  <span className="text-xs text-gray-400">{allStaffRoles.length} roles total</span>
+                </div>
                 <div className="overflow-x-auto">
                   <table className="w-full">
                     <thead>
@@ -289,14 +408,8 @@ export default function Analytics() {
                       </tr>
                     </thead>
                     <tbody>
-                      {[
-                        { role: 'Support Worker', headcount: 18, fte: 16.2, vacancies: 2, fill: 90 },
-                        { role: 'Senior Carer', headcount: 8, fte: 7.6, vacancies: 1, fill: 88 },
-                        { role: 'Team Leader', headcount: 4, fte: 4.0, vacancies: 0, fill: 100 },
-                        { role: 'Care Coordinator', headcount: 3, fte: 3.0, vacancies: 0, fill: 100 },
-                        { role: 'Night Support', headcount: 5, fte: 4.5, vacancies: 1, fill: 83 },
-                      ].map((row, i) => (
-                        <tr key={i} className="border-b border-gray-50 hover:bg-gray-50">
+                      {pgSlice(allStaffRoles, staffRolePage).map((row, i) => (
+                        <tr key={i} className="border-b border-gray-50 hover:bg-gray-50 transition-colors">
                           <td className="py-3 px-4 text-sm text-gray-900">{row.role}</td>
                           <td className="py-3 px-4 text-sm text-gray-700 text-right">{row.headcount}</td>
                           <td className="py-3 px-4 text-sm text-gray-700 text-right">{row.fte}</td>
@@ -319,6 +432,13 @@ export default function Analytics() {
                     </tbody>
                   </table>
                 </div>
+                <Paginator
+                  page={staffRolePage}
+                  total={pgTotal(allStaffRoles.length)}
+                  onPrev={() => setStaffRolePage(p => p - 1)}
+                  onNext={() => setStaffRolePage(p => p + 1)}
+                  label={pgLabel(staffRolePage, allStaffRoles.length, 'roles')}
+                />
               </Card>
             </div>
           </div>
@@ -359,15 +479,12 @@ export default function Analytics() {
               </Card>
 
               <Card>
-                <div className="text-sm text-gray-600 mb-4">Care Plan Review Status</div>
-                <div className="space-y-3">
-                  {[
-                    { user: 'Sarah Johnson', reviewer: 'Dr. Emily Carter', due: '20 Jun 2026', status: 'scheduled', daysLeft: 11 },
-                    { user: 'Michael Thompson', reviewer: 'Sarah Williams', due: '5 Jun 2026', status: 'overdue', daysLeft: -4 },
-                    { user: 'Oliver Parker', reviewer: 'James Mitchell', due: '8 Jun 2026', status: 'overdue', daysLeft: -1 },
-                    { user: 'Emma Roberts', reviewer: 'Dr. Emily Carter', due: '1 Jul 2026', status: 'upcoming', daysLeft: 22 },
-                    { user: 'Lucas Chen', reviewer: 'Sarah Williams', due: '15 Jun 2026', status: 'upcoming', daysLeft: 6 },
-                  ].map((r, i) => (
+                <div className="flex items-center justify-between mb-4">
+                  <div className="text-sm text-gray-600">Care Plan Review Status</div>
+                  <span className="text-xs text-gray-400">{allCarePlanReviews.length} reviews</span>
+                </div>
+                <div className="space-y-1">
+                  {pgSlice(allCarePlanReviews, carePlanPage).map((r, i) => (
                     <div key={i} className="flex items-center justify-between py-2 border-b border-gray-50 last:border-0">
                       <div>
                         <div className="text-sm text-gray-900">{r.user}</div>
@@ -388,6 +505,13 @@ export default function Analytics() {
                     </div>
                   ))}
                 </div>
+                <Paginator
+                  page={carePlanPage}
+                  total={pgTotal(allCarePlanReviews.length)}
+                  onPrev={() => setCarePlanPage(p => p - 1)}
+                  onNext={() => setCarePlanPage(p => p + 1)}
+                  label={pgLabel(carePlanPage, allCarePlanReviews.length, 'reviews')}
+                />
               </Card>
             </div>
           </div>
@@ -462,19 +586,16 @@ export default function Analytics() {
                 </ResponsiveContainer>
               </Card>
               <Card>
-                <div className="text-sm text-gray-600 mb-4">Incident Types (Jun 2026)</div>
-                <div className="space-y-3 mt-2">
-                  {[
-                    { type: 'Behaviour / Aggression', count: 2, pct: 33 },
-                    { type: 'Falls / Accidents', count: 1, pct: 17 },
-                    { type: 'Self-harm', count: 1, pct: 17 },
-                    { type: 'Property Damage', count: 1, pct: 17 },
-                    { type: 'Medication Error', count: 1, pct: 17 },
-                  ].map((t, i) => (
+                <div className="flex items-center justify-between mb-4">
+                  <div className="text-sm text-gray-600">Incident Types (Jun 2026)</div>
+                  <span className="text-xs text-gray-400">{allIncidentTypes.length} categories</span>
+                </div>
+                <div className="space-y-3">
+                  {pgSlice(allIncidentTypes, incidentTypePage).map((t, i) => (
                     <div key={i}>
                       <div className="flex items-center justify-between mb-1">
                         <span className="text-sm text-gray-700">{t.type}</span>
-                        <span className="text-sm text-gray-900">{t.count}</span>
+                        <span className="text-sm text-gray-900 font-medium">{t.count}</span>
                       </div>
                       <div className="h-2 bg-gray-100 rounded-full overflow-hidden">
                         <div className="h-full bg-red-400 rounded-full" style={{ width: `${t.pct}%` }} />
@@ -482,6 +603,13 @@ export default function Analytics() {
                     </div>
                   ))}
                 </div>
+                <Paginator
+                  page={incidentTypePage}
+                  total={pgTotal(allIncidentTypes.length)}
+                  onPrev={() => setIncidentTypePage(p => p - 1)}
+                  onNext={() => setIncidentTypePage(p => p + 1)}
+                  label={pgLabel(incidentTypePage, allIncidentTypes.length, 'types')}
+                />
               </Card>
             </div>
           </div>
@@ -536,21 +664,19 @@ export default function Analytics() {
               </Card>
 
               <Card>
-                <div className="text-sm text-gray-600 mb-4">Regulatory Actions Required</div>
-                <div className="space-y-3">
-                  {[
-                    { action: 'Update Safeguarding Policy', priority: 'high', due: '15 Jun 2026', owner: 'Dr. Emily Carter' },
-                    { action: 'Complete staff supervision records', priority: 'medium', due: '20 Jun 2026', owner: 'All Team Leaders' },
-                    { action: 'Fire Risk Assessment renewal', priority: 'medium', due: '30 Jun 2026', owner: 'Facilities Manager' },
-                    { action: 'Medication policy review', priority: 'low', due: '31 Jul 2026', owner: 'Clinical Lead' },
-                  ].map((a, i) => (
+                <div className="flex items-center justify-between mb-4">
+                  <div className="text-sm text-gray-600">Regulatory Actions Required</div>
+                  <span className="text-xs text-gray-400">{allRegulatoryActions.length} items</span>
+                </div>
+                <div className="space-y-1">
+                  {pgSlice(allRegulatoryActions, regActionsPage).map((a, i) => (
                     <div key={i} className="flex items-start gap-3 py-2 border-b border-gray-50 last:border-0">
                       <div className={`w-2 h-2 rounded-full mt-2 shrink-0 ${a.priority === 'high' ? 'bg-red-500' : a.priority === 'medium' ? 'bg-amber-500' : 'bg-gray-300'}`} />
                       <div className="flex-1">
                         <div className="text-sm text-gray-900">{a.action}</div>
-                        <div className="text-xs text-gray-500">{a.owner} • Due {a.due}</div>
+                        <div className="text-xs text-gray-500">{a.owner} &bull; Due {a.due}</div>
                       </div>
-                      <span className={`px-2 py-0.5 text-xs rounded-full ${
+                      <span className={`px-2 py-0.5 text-xs rounded-full shrink-0 ${
                         a.priority === 'high' ? 'bg-red-100 text-red-700' :
                         a.priority === 'medium' ? 'bg-amber-100 text-amber-700' :
                         'bg-gray-100 text-gray-600'
@@ -560,15 +686,31 @@ export default function Analytics() {
                     </div>
                   ))}
                 </div>
+                <Paginator
+                  page={regActionsPage}
+                  total={pgTotal(allRegulatoryActions.length)}
+                  onPrev={() => setRegActionsPage(p => p - 1)}
+                  onNext={() => setRegActionsPage(p => p + 1)}
+                  label={pgLabel(regActionsPage, allRegulatoryActions.length, 'actions')}
+                />
               </Card>
             </div>
 
             <Card>
               <div className="flex items-center justify-between mb-4">
                 <div className="text-sm text-gray-600">Statutory Reports</div>
-                <button className="flex items-center gap-2 px-3 py-1.5 text-xs bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
-                  <Plus size={12} /> Generate Report
-                </button>
+                <div className="flex items-center gap-3">
+                  <span className="text-xs text-gray-400">{allStatutoryReports.length} reports</span>
+                  <button
+                    onClick={() => {
+                      setSelectedReportTitle('Statutory Reports Summary');
+                      setShowExportModal(true);
+                    }}
+                    className="flex items-center gap-2 px-3 py-1.5 text-xs bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-semibold"
+                  >
+                    <Plus size={12} /> Generate Report
+                  </button>
+                </div>
               </div>
               <div className="overflow-x-auto">
                 <table className="w-full">
@@ -582,22 +724,32 @@ export default function Analytics() {
                     </tr>
                   </thead>
                   <tbody>
-                    {[
-                      { report: 'CQC Provider Information Return', frequency: 'Annual', last: 'Apr 2026', next: 'Apr 2027' },
-                      { report: 'Safeguarding Referral Log', frequency: 'Monthly', last: 'May 2026', next: 'Jun 2026' },
-                      { report: 'Medication Administration Report', frequency: 'Monthly', last: 'May 2026', next: 'Jun 2026' },
-                      { report: 'Notifiable Incidents (Regulation 18)', frequency: 'As required', last: 'Mar 2026', next: 'As required' },
-                      { report: 'Staffing Levels Report', frequency: 'Monthly', last: 'May 2026', next: 'Jun 2026' },
-                    ].map((r, i) => (
-                      <tr key={i} className="border-b border-gray-50 hover:bg-gray-50">
+                    {pgSlice(allStatutoryReports, statutoryPage).map((r, i) => (
+                      <tr key={i} className="border-b border-gray-50 hover:bg-gray-50 transition-colors">
                         <td className="py-3 px-4 text-sm text-gray-900">{r.report}</td>
                         <td className="py-3 px-4 text-sm text-gray-500">{r.frequency}</td>
                         <td className="py-3 px-4 text-sm text-gray-500">{r.last}</td>
                         <td className="py-3 px-4 text-sm text-gray-500">{r.next}</td>
                         <td className="py-3 px-4">
                           <div className="flex items-center justify-end gap-2">
-                            <button className="px-3 py-1 text-xs text-blue-600 bg-blue-50 rounded hover:bg-blue-100">Generate</button>
-                            <button className="px-3 py-1 text-xs text-gray-600 bg-gray-100 rounded hover:bg-gray-200"><Download size={12} /></button>
+                            <button
+                              onClick={() => {
+                                setSelectedReportTitle(r.report);
+                                setShowExportModal(true);
+                              }}
+                              className="px-3 py-1 text-xs text-blue-600 bg-blue-50 rounded hover:bg-blue-100 transition-colors font-medium"
+                            >
+                              Generate
+                            </button>
+                            <button
+                              onClick={() => {
+                                setSelectedReportTitle(r.report);
+                                setShowExportModal(true);
+                              }}
+                              className="px-3 py-1 text-xs text-gray-600 bg-gray-100 rounded hover:bg-gray-200 transition-colors"
+                            >
+                              <Download size={12} />
+                            </button>
                           </div>
                         </td>
                       </tr>
@@ -605,14 +757,28 @@ export default function Analytics() {
                   </tbody>
                 </table>
               </div>
+              <Paginator
+                page={statutoryPage}
+                total={pgTotal(allStatutoryReports.length)}
+                onPrev={() => setStatutoryPage(p => p - 1)}
+                onNext={() => setStatutoryPage(p => p + 1)}
+                label={pgLabel(statutoryPage, allStatutoryReports.length, 'reports')}
+              />
             </Card>
           </div>
         )}
 
         <div className="text-center py-6 text-xs text-gray-400 border-t border-gray-100 mt-8">
-          MpoweredCare © 2025 — Internal Use Only
+          Powered by MployUs
         </div>
-      </main>
+      </div>
+    </main>
+
+    <ExportReportModal
+      isOpen={showExportModal}
+      onClose={() => setShowExportModal(false)}
+      reportTitle={selectedReportTitle}
+    />
     </div>
   );
 }

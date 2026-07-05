@@ -2,7 +2,7 @@ import { Sidebar } from '../components/Sidebar';
 import { TopBar } from '../components/TopBar';
 import { Card } from '../components/Card';
 import { Badge } from '../components/Badge';
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import {
   MessageSquare, Users, Bell, Phone, Search, Plus,
   Send, Paperclip, Smile, MoreVertical, CheckCheck, Check,
@@ -217,17 +217,25 @@ function AnnouncementModal({
 }
 
 /* ─── New Message Modal ─── */
-function NewMessageModal({ onClose }: { onClose: () => void }) {
+function NewMessageModal({ 
+  defaultType = 'direct',
+  onClose,
+  onSend
+}: { 
+  defaultType?: 'direct' | 'group' | 'family';
+  onClose: () => void;
+  onSend: (message: { recipient: string; messageType: 'direct' | 'group' | 'family'; subject: string; body: string }) => void;
+}) {
   const [form, setForm] = useState({
     recipient: '',
-    messageType: 'direct' as 'direct' | 'group' | 'family',
+    messageType: defaultType,
     subject: '',
     body: '',
   });
 
   const handleSend = () => {
     if (!form.recipient.trim() || !form.body.trim()) return;
-    // Handle message sending logic here
+    onSend(form);
     onClose();
   };
 
@@ -368,6 +376,7 @@ function NewMessageModal({ onClose }: { onClose: () => void }) {
 
 export default function CommunicationHub() {
   const [activeTab, setActiveTab] = useState<TabType>('messages');
+  const [threadsList, setThreadsList] = useState<Thread[]>(threads);
   const [activeThread, setActiveThread] = useState<Thread | null>(threads[0]);
   const [messageText, setMessageText] = useState('');
   const [filterType, setFilterType] = useState<'all' | 'direct' | 'group' | 'family'>('all');
@@ -377,11 +386,137 @@ export default function CommunicationHub() {
   const [showArchived, setShowArchived] = useState(false);
   const [notifications, setNotifications] = useState<Notification[]>(initialNotifications);
   const [showNewMessage, setShowNewMessage] = useState(false);
+  const [defaultNewMsgType, setDefaultNewMsgType] = useState<'direct' | 'group' | 'family'>('direct');
 
-  const totalUnread = threads.reduce((sum, t) => sum + t.unread, 0);
+  const [conversationsMap, setConversationsMap] = useState<Record<number, Message[]>>({
+    1: [
+      { id: 1, sender: 'Dr. Emily Carter', initials: 'EC', color: 'bg-purple-500', content: "Hi, I've completed the updated care plan review for Sarah Johnson. Could you check the medication section and confirm the new dosage with the pharmacy?", time: '10:30', read: true, mine: false },
+      { id: 2, sender: 'You', initials: 'AM', color: 'bg-blue-600', content: "Thanks Emily, I'll review it now and follow up with the pharmacy this afternoon.", time: '10:35', read: true, mine: true },
+      { id: 3, sender: 'Dr. Emily Carter', initials: 'EC', color: 'bg-purple-500', content: "Perfect. Also, her next multi-agency review is scheduled for 20 June — I'll circulate the agenda shortly. Sarah's review notes have been updated in the system.", time: '10:42', read: false, mine: false },
+    ],
+    4: [
+      { id: 1, sender: "Jane Johnson (Sarah's Mum)", initials: 'JJ', color: 'bg-rose-500', content: "Hi there, is it okay if we take Sarah out for a few hours this Sunday?", time: 'Yesterday, 14:20', read: true, mine: false },
+      { id: 2, sender: 'You', initials: 'AM', color: 'bg-blue-600', content: "Hi Jane! Yes, that should be fine. Please ensure she returns by 5 PM for her medication review.", time: 'Yesterday, 14:30', read: true, mine: true },
+      { id: 3, sender: "Jane Johnson (Sarah's Mum)", initials: 'JJ', color: 'bg-rose-500', content: "Thank you for the update about the trip. We will make sure she's back on time.", time: 'Yesterday, 15:10', read: false, mine: false },
+    ],
+    7: [
+      { id: 1, sender: 'You', initials: 'AM', color: 'bg-blue-600', content: "Hi Thompson Family, just checking if you are coming for the weekend visit?", time: 'Sun, 10:15', read: true, mine: true },
+      { id: 2, sender: 'Thompson Family', initials: 'TF', color: 'bg-green-500', content: "Yes, we'll visit on Saturday at 2pm. Looking forward to it!", time: 'Sun, 11:02', read: true, mine: false },
+    ]
+  });
+
+  const [outboundNotifications, setOutboundNotifications] = useState([
+    { type: 'SMS', recipient: "Jane Johnson (Sarah's Mum)", content: "Visit reminder: Tomorrow 14:00 at Riverside House", sent: '8 Jun, 09:00', status: 'delivered' },
+    { type: 'Email', recipient: 'thompson.family@email.com', content: 'Monthly care update for Michael Thompson — June 2026', sent: '7 Jun, 11:30', status: 'opened' },
+    { type: 'SMS', recipient: "Oliver Parker's Dad", content: 'Care plan review scheduled: 20 June 2026 at 14:00', sent: '6 Jun, 14:15', status: 'delivered' },
+    { type: 'Email', recipient: 'sofia.martinez@email.com', content: "Sophie's quarterly update — May 2026", sent: '1 Jun, 10:00', status: 'delivered' },
+  ]);
+
+  const [toastMessage, setToastMessage] = useState<string | null>(null);
+  const toastTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const triggerToast = (msg: string) => {
+    setToastMessage(msg);
+    if (toastTimer.current) clearTimeout(toastTimer.current);
+    toastTimer.current = setTimeout(() => setToastMessage(null), 3000);
+  };
+
+  const totalUnread = threadsList.reduce((sum, t) => sum + t.unread, 0);
   const unreadNotifs = notifications.filter(n => !n.read).length;
 
-  const filteredThreads = filterType === 'all' ? threads : threads.filter(t => t.type === filterType);
+  const filteredThreads = filterType === 'all' ? threadsList : threadsList.filter(t => t.type === filterType);
+
+  const handleSendMessage = () => {
+    if (!messageText.trim() || !activeThread) return;
+    const newMsg: Message = {
+      id: Date.now(),
+      sender: 'You',
+      initials: 'AM',
+      color: 'bg-blue-600',
+      content: messageText.trim(),
+      time: new Date().toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' }),
+      read: false,
+      mine: true
+    };
+    
+    setConversationsMap(prev => ({
+      ...prev,
+      [activeThread.id]: [...(prev[activeThread.id] || []), newMsg]
+    }));
+    
+    setThreadsList(prev => prev.map(t => {
+      if (t.id === activeThread.id) {
+        return {
+          ...t,
+          lastMessage: messageText.trim(),
+          time: new Date().toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' }),
+          unread: 0
+        };
+      }
+      return t;
+    }));
+    
+    setMessageText('');
+  };
+
+  const handleNewMessageSent = (data: { recipient: string; messageType: 'direct' | 'group' | 'family'; subject: string; body: string }) => {
+    const cleanedRecipient = data.recipient.split(' - ')[0];
+    let existing = threadsList.find(t => t.name === cleanedRecipient && t.type === data.messageType);
+    let threadId = existing ? existing.id : Date.now();
+    
+    if (!existing) {
+      const initials = cleanedRecipient.split(/\s+/).map(n => n[0]).join('').substring(0, 2).toUpperCase();
+      const colors = ['bg-blue-500', 'bg-purple-500', 'bg-rose-500', 'bg-teal-500', 'bg-emerald-500', 'bg-amber-500'];
+      const color = colors[Math.floor(Math.random() * colors.length)];
+      
+      const newThread: Thread = {
+        id: threadId,
+        name: cleanedRecipient,
+        initials,
+        color,
+        role: data.messageType === 'family' ? 'Family / NOK' : data.messageType === 'group' ? 'Group Channel' : 'Staff Member',
+        lastMessage: data.body,
+        time: new Date().toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' }),
+        unread: 0,
+        type: data.messageType
+      };
+      
+      setThreadsList(prev => [newThread, ...prev]);
+      setActiveThread(newThread);
+    } else {
+      setThreadsList(prev => prev.map(t => {
+        if (t.id === threadId) {
+          return {
+            ...t,
+            lastMessage: data.body,
+            time: new Date().toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' }),
+            unread: 0
+          };
+        }
+        return t;
+      }));
+      setActiveThread(existing);
+    }
+    
+    const newMsg: Message = {
+      id: Date.now(),
+      sender: 'You',
+      initials: 'AM',
+      color: 'bg-blue-600',
+      content: data.body,
+      time: new Date().toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' }),
+      read: true,
+      mine: true
+    };
+    
+    setConversationsMap(prev => ({
+      ...prev,
+      [threadId]: [...(prev[threadId] || []), newMsg]
+    }));
+    
+    setActiveTab('messages');
+    triggerToast(`Message sent to ${cleanedRecipient}`);
+  };
 
   const handleMarkAllRead = () => {
     setNotifications(ns => ns.map(n => ({ ...n, read: true })));
@@ -400,26 +535,30 @@ export default function CommunicationHub() {
       <Sidebar activeItem="Communication" />
       <TopBar />
 
-      <main className="ml-64 pt-24 px-8 pb-8">
-        {/* Header */}
-        <div className="flex items-center justify-between mb-6">
-          <div>
-            <h1 className="text-3xl text-gray-900">Communication Hub</h1>
-            <p className="text-sm text-gray-600 mt-1">Secure internal messaging, announcements, and family communications</p>
+      <main className="ml-0 md:ml-64 pt-20 px-4 md:px-8 pb-8 transition-all duration-300">
+        <div className="max-w-[1600px] mx-auto w-full">
+          {/* Header */}
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
+            <div>
+              <h1 className="text-3xl text-gray-900">Communication Hub</h1>
+              <p className="text-sm text-gray-600 mt-1">Secure internal messaging, announcements, and family communications</p>
+            </div>
+            <div className="flex items-center gap-3">
+              <button className="flex items-center gap-2 px-4 py-2 bg-white border border-gray-200 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors text-sm font-medium">
+                <Bell size={16} /> {unreadNotifs > 0 && <span className="bg-red-500 text-white text-xs rounded-full px-1.5 py-0.5">{unreadNotifs}</span>}
+                Notifications
+              </button>
+              <button
+                onClick={() => {
+                  setDefaultNewMsgType('direct');
+                  setShowNewMessage(true);
+                }}
+                className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm font-semibold shadow-sm animate-pulse"
+              >
+                <Plus size={16} /> New Message
+              </button>
+            </div>
           </div>
-          <div className="flex items-center gap-3">
-            <button className="flex items-center gap-2 px-4 py-2 bg-white border border-gray-200 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors text-sm">
-              <Bell size={16} /> {unreadNotifs > 0 && <span className="bg-red-500 text-white text-xs rounded-full px-1.5 py-0.5">{unreadNotifs}</span>}
-              Notifications
-            </button>
-            <button
-              onClick={() => setShowNewMessage(true)}
-              className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm"
-            >
-              <Plus size={16} /> New Message
-            </button>
-          </div>
-        </div>
 
         {/* Stats Row */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
@@ -533,7 +672,7 @@ export default function CommunicationHub() {
                       </div>
                     </div>
                   )}
-                  {conversation.map(msg => (
+                  {(conversationsMap[activeThread.id] || []).map(msg => (
                     <div key={msg.id} className={`flex gap-3 ${msg.mine ? 'flex-row-reverse' : ''}`}>
                       {!msg.mine && (
                         <div className={`w-8 h-8 rounded-full ${msg.color} flex items-center justify-center text-white text-xs shrink-0`}>{msg.initials}</div>
@@ -558,12 +697,18 @@ export default function CommunicationHub() {
                     <textarea
                       value={messageText}
                       onChange={e => setMessageText(e.target.value)}
+                      onKeyDown={e => {
+                        if (e.key === 'Enter' && !e.shiftKey) {
+                          e.preventDefault();
+                          handleSendMessage();
+                        }
+                      }}
                       placeholder="Type a message..."
                       className="flex-1 bg-transparent text-sm text-gray-700 outline-none resize-none max-h-32"
                       rows={1}
                     />
                     <button className="p-1 hover:bg-gray-200 rounded-lg transition-colors"><Smile size={18} className="text-gray-500" /></button>
-                    <button className="p-2 bg-blue-600 rounded-lg hover:bg-blue-700 transition-colors">
+                    <button onClick={handleSendMessage} className="p-2 bg-blue-600 rounded-lg hover:bg-blue-700 transition-colors">
                       <Send size={16} className="text-white" />
                     </button>
                   </div>
@@ -693,13 +838,26 @@ export default function CommunicationHub() {
             <div>
               <div className="flex items-center justify-between mb-4">
                 <h2 className="text-lg text-gray-900">Family Conversations</h2>
-                <button className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm">
+                <button 
+                  onClick={() => {
+                    setDefaultNewMsgType('family');
+                    setShowNewMessage(true);
+                  }}
+                  className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm font-semibold shadow-sm animate-pulse"
+                >
                   <Plus size={16} /> New Message
                 </button>
               </div>
               <div className="space-y-3">
-                {threads.filter(t => t.type === 'family').map(t => (
-                  <Card key={t.id} className="hover:border-blue-200 transition-colors cursor-pointer">
+                {threadsList.filter(t => t.type === 'family').map(t => (
+                  <Card 
+                    key={t.id} 
+                    className="hover:border-blue-200 transition-colors cursor-pointer"
+                    onClick={() => {
+                      setActiveThread(t);
+                      setActiveTab('messages');
+                    }}
+                  >
                     <div className="flex items-center gap-4">
                       <div className={`w-10 h-10 rounded-full ${t.color} flex items-center justify-center text-white text-xs`}>{t.initials}</div>
                       <div className="flex-1 min-w-0">
@@ -719,12 +877,7 @@ export default function CommunicationHub() {
               <h2 className="text-lg text-gray-900 mb-4">SMS & Email Notifications</h2>
               <Card>
                 <div className="space-y-4">
-                  {[
-                    { type: 'SMS', recipient: 'Jane Johnson (Sarah\'s Mum)', content: 'Visit reminder: Tomorrow 14:00 at Riverside House', sent: '8 Jun, 09:00', status: 'delivered' },
-                    { type: 'Email', recipient: 'thompson.family@email.com', content: 'Monthly care update for Michael Thompson — June 2026', sent: '7 Jun, 11:30', status: 'opened' },
-                    { type: 'SMS', recipient: 'Oliver Parker\'s Dad', content: 'Care plan review scheduled: 20 June 2026 at 14:00', sent: '6 Jun, 14:15', status: 'delivered' },
-                    { type: 'Email', recipient: 'sofia.martinez@email.com', content: 'Sophie\'s quarterly update — May 2026', sent: '1 Jun, 10:00', status: 'delivered' },
-                  ].map((n, i) => (
+                  {outboundNotifications.map((n, i) => (
                     <div key={i} className="flex items-start gap-3 pb-4 border-b border-gray-50 last:border-0">
                       <div className={`px-2 py-0.5 text-xs rounded shrink-0 mt-0.5 ${n.type === 'SMS' ? 'bg-green-100 text-green-700' : 'bg-blue-100 text-blue-700'}`}>
                         {n.type}
@@ -813,9 +966,10 @@ export default function CommunicationHub() {
         )}
 
         <div className="text-center py-6 text-xs text-gray-400 border-t border-gray-100 mt-8">
-          MpoweredCare © 2025 — Internal Use Only
+          Powered by MployUs
         </div>
-      </main>
+      </div>
+    </main>
 
       {showPostAnnouncement && (
         <AnnouncementModal
@@ -832,8 +986,16 @@ export default function CommunicationHub() {
       )}
       {showNewMessage && (
         <NewMessageModal
+          defaultType={defaultNewMsgType}
           onClose={() => setShowNewMessage(false)}
+          onSend={handleNewMessageSent}
         />
+      )}
+      {toastMessage && (
+        <div className="fixed bottom-6 right-6 z-50 flex items-center gap-2 bg-gray-900 text-white px-4 py-3 rounded-xl shadow-xl text-sm font-medium animate-bounce">
+          <CheckCircle size={15} className="text-green-400" />
+          {toastMessage}
+        </div>
       )}
     </div>
   );
