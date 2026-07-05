@@ -1465,3 +1465,4 @@ export default function StaffProfile({ id, showTimesheet = false }: StaffProfile
       />
     </div>
   );
+}
