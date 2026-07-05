@@ -20,6 +20,7 @@ import {
   CalendarRange
 } from 'lucide-react';
 import { useNavigation } from '../context/NavigationContext';
+import { useBranding } from '../context/BrandingContext';
 import { useState } from 'react';
 
 interface NavItem {
@@ -31,6 +32,7 @@ interface NavItem {
 
 export function Sidebar({ activeItem = 'Dashboard' }: { activeItem?: string }) {
   const { setCurrentPage, isSidebarOpen, setIsSidebarOpen, isSidebarCollapsed, setIsSidebarCollapsed } = useNavigation();
+  const { clientLogoUrl, clientName, clientTagline, sidebarColor } = useBranding();
   const [expandedGroups, setExpandedGroups] = useState<string[]>(['Care', 'Workforce']);
 
   const navGroups: { group: string; items: NavItem[] }[] = [
@@ -93,7 +95,7 @@ export function Sidebar({ activeItem = 'Dashboard' }: { activeItem?: string }) {
         onClick={() => setIsSidebarOpen(false)}
       />
 
-      <div className={`bg-gray-900 text-white h-screen fixed left-0 top-0 flex flex-col z-30 transition-all duration-300 ease-in-out md:translate-x-0 ${
+      <div style={{ backgroundColor: sidebarColor }} className={`text-white h-screen fixed left-0 top-0 flex flex-col z-30 transition-all duration-300 ease-in-out md:translate-x-0 ${
         isSidebarOpen ? 'translate-x-0' : '-translate-x-full'
       } ${
         isSidebarCollapsed ? 'w-[4.5rem]' : 'w-64'
@@ -107,18 +109,31 @@ export function Sidebar({ activeItem = 'Dashboard' }: { activeItem?: string }) {
           {isSidebarCollapsed ? <ChevronRight size={12} /> : <ChevronLeft size={12} />}
         </button>
 
-        <div className="p-4 border-b border-gray-700 shrink-0 flex items-center justify-between gap-2">
-          <div className="flex items-center gap-3 min-w-0">
-            <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center shrink-0">
-              <Shield size={16} className="text-white" />
-            </div>
-            {!isSidebarCollapsed && (
+        {/* Client identity — primary workspace brand */}
+        <div className="p-4 border-b border-white/10 shrink-0">
+          {!isSidebarCollapsed ? (
+            <div className="flex items-center gap-3 min-w-0">
+              {clientLogoUrl ? (
+                <img src={clientLogoUrl} alt={clientName} className="w-11 h-11 rounded-lg object-contain bg-white p-1 shrink-0" />
+              ) : (
+                <div className="w-11 h-11 rounded-lg border border-dashed border-gray-500 bg-white/5 flex items-center justify-center text-[9px] text-gray-400 tracking-wide uppercase shrink-0">
+                  Logo
+                </div>
+              )}
               <div className="min-w-0">
-                <h1 className="text-base text-white font-bold truncate">MpoweredCare</h1>
-                <p className="text-[10px] text-gray-400 truncate">Care Platform</p>
+                <h1 className="text-sm text-white font-semibold truncate">{clientName}</h1>
+                <p className="text-[10px] text-gray-300 truncate opacity-80">{clientTagline}</p>
               </div>
-            )}
-          </div>
+            </div>
+          ) : (
+            clientLogoUrl ? (
+              <img src={clientLogoUrl} alt={clientName} className="w-9 h-9 mx-auto rounded-lg object-contain bg-white p-1" />
+            ) : (
+              <div className="w-9 h-9 mx-auto rounded-lg border border-dashed border-gray-500 bg-white/5 flex items-center justify-center text-[8px] text-gray-400 tracking-wide uppercase">
+                Logo
+              </div>
+            )
+          )}
         </div>
 
         <nav className="flex-1 py-3 overflow-y-auto">
@@ -166,20 +181,32 @@ export function Sidebar({ activeItem = 'Dashboard' }: { activeItem?: string }) {
           })}
         </nav>
 
-        <div className="p-4 border-t border-gray-700 shrink-0">
-          <div className={`flex items-center rounded-lg hover:bg-gray-800 cursor-pointer transition-colors ${
-            isSidebarCollapsed ? 'justify-center p-1' : 'gap-3 px-2 py-2'
-          }`}>
-            <div className="w-8 h-8 bg-blue-500 rounded-full flex items-center justify-center text-xs text-white shrink-0">
-              AM
-            </div>
-            {!isSidebarCollapsed && (
-              <div className="flex-1 min-w-0">
-                <div className="text-xs text-white truncate font-semibold">Admin Manager</div>
-                <div className="text-xs text-gray-400 truncate">Administrator</div>
+        <div className="border-t border-gray-700 shrink-0">
+          <div className="p-4">
+            <div className={`flex items-center rounded-lg hover:bg-gray-800 cursor-pointer transition-colors ${
+              isSidebarCollapsed ? 'justify-center p-1' : 'gap-3 px-2 py-2'
+            }`}>
+              <div className="w-8 h-8 bg-blue-500 rounded-full flex items-center justify-center text-xs text-white shrink-0">
+                AM
               </div>
-            )}
+              {!isSidebarCollapsed && (
+                <div className="flex-1 min-w-0">
+                  <div className="text-xs text-white truncate font-semibold">Admin Manager</div>
+                  <div className="text-xs text-gray-400 truncate">Administrator</div>
+                </div>
+              )}
+            </div>
           </div>
+          {!isSidebarCollapsed && (
+            <div className="px-4 pb-3 flex items-center justify-center gap-1.5">
+              <div className="w-4 h-4 bg-blue-600 rounded flex items-center justify-center shrink-0">
+                <Shield size={9} className="text-white" />
+              </div>
+              <span className="text-[10px] text-gray-500 tracking-wide">
+                Powered by <span className="text-gray-400 font-medium">MpoweredCare</span>
+              </span>
+            </div>
+          )}
         </div>
       </div>
     </>
