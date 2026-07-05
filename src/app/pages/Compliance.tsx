@@ -96,7 +96,7 @@ export default function Compliance() {
     auditScoreChange: '+8%',
   };
 
-  const requirements = [
+  const [requirements, setRequirements] = useState<any[]>([
     {
       id: 1,
       name: 'GDPR Data Protection Impact Assessment',
@@ -229,9 +229,9 @@ export default function Compliance() {
       progress: 100,
       nextReview: '22 Jul 2026',
     },
-  ];
+  ]);
 
-  const audits = [
+  const [audits, setAudits] = useState<any[]>([
     {
       id: 1,
       auditNumber: 'AUD-2026-001',
@@ -296,7 +296,7 @@ export default function Compliance() {
       findings: 0,
       actionItems: 0,
     },
-  ];
+  ]);
 
   const complianceGaps = [
     {
@@ -434,14 +434,14 @@ export default function Compliance() {
     },
   ];
 
-  const riskAssessments = [
-    { area: 'Data Protection & GDPR', riskLevel: 'high' as const, score: 7.2, trend: 'up' as const, lastAssessed: '10 Feb 2026', controls: 12, gaps: 3 },
-    { area: 'Health & Safety', riskLevel: 'critical' as const, score: 8.5, trend: 'up' as const, lastAssessed: '5 Feb 2026', controls: 18, gaps: 5 },
-    { area: 'Employment Law', riskLevel: 'medium' as const, score: 4.8, trend: 'down' as const, lastAssessed: '12 Feb 2026', controls: 15, gaps: 2 },
-    { area: 'Financial Compliance', riskLevel: 'low' as const, score: 2.1, trend: 'stable' as const, lastAssessed: '8 Feb 2026', controls: 10, gaps: 0 },
-    { area: 'Equality & Diversity', riskLevel: 'low' as const, score: 1.8, trend: 'down' as const, lastAssessed: '15 Feb 2026', controls: 8, gaps: 0 },
-    { area: 'Industrial Relations', riskLevel: 'high' as const, score: 6.9, trend: 'up' as const, lastAssessed: '3 Feb 2026', controls: 6, gaps: 3 },
-  ];
+  const [riskAssessments, setRiskAssessments] = useState<any[]>([
+    { id: 1, area: 'Data Protection & GDPR', riskLevel: 'high', score: 7.2, trend: 'up', lastAssessed: '10 Feb 2026', controls: 12, gaps: 3 },
+    { id: 2, area: 'Health & Safety', riskLevel: 'critical', score: 8.5, trend: 'up', lastAssessed: '5 Feb 2026', controls: 18, gaps: 5 },
+    { id: 3, area: 'Employment Law', riskLevel: 'medium', score: 4.8, trend: 'down', lastAssessed: '12 Feb 2026', controls: 15, gaps: 2 },
+    { id: 4, area: 'Financial Compliance', riskLevel: 'low', score: 2.1, trend: 'stable', lastAssessed: '8 Feb 2026', controls: 10, gaps: 0 },
+    { id: 5, area: 'Equality & Diversity', riskLevel: 'low', score: 1.8, trend: 'down', lastAssessed: '15 Feb 2026', controls: 8, gaps: 0 },
+    { id: 6, area: 'Industrial Relations', riskLevel: 'high', score: 6.9, trend: 'up', lastAssessed: '3 Feb 2026', controls: 6, gaps: 3 },
+  ]);
 
   const upcomingRenewals = [
     { id: 1, item: 'GDPR Impact Assessment - Crestfield Technologies', dueDate: '15 Apr 2026', daysLeft: 50, priority: 'high' },
@@ -1328,6 +1328,10 @@ export default function Compliance() {
           isOpen={showAuditDetails}
           onClose={() => setShowAuditDetails(false)}
           audit={selectedAudit}
+          onSave={(updated) => {
+            setAudits(prev => prev.map(a => a.id === updated.id ? { ...a, ...updated } : a));
+            setSelectedAudit((s: any) => s ? { ...s, ...updated } : s);
+          }}
         />
       )}
       {selectedRenewal && (
@@ -1354,6 +1358,10 @@ export default function Compliance() {
           isOpen={showRequirementDetail}
           onClose={() => setShowRequirementDetail(false)}
           requirement={selectedRequirement}
+          onSave={(updated) => {
+            setRequirements(prev => prev.map(r => r.id === updated.id ? { ...r, ...updated } : r));
+            setSelectedRequirement((s: any) => s ? { ...s, ...updated } : s);
+          }}
         />
       )}
       {selectedGap && (
@@ -1368,6 +1376,10 @@ export default function Compliance() {
           isOpen={showRiskDetail}
           onClose={() => setShowRiskDetail(false)}
           risk={selectedRisk}
+          onSave={(updated) => {
+            setRiskAssessments(prev => prev.map(r => (r.id === updated.id || r.area === updated.area) ? { ...r, ...updated } : r));
+            setSelectedRisk((s: any) => s ? { ...s, ...updated } : s);
+          }}
         />
       )}
       <ExportReportModal
