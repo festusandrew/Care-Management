@@ -31,7 +31,8 @@ import {
   Settings as SettingsIcon,
   AlertCircle
 } from 'lucide-react';
-import { useState } from 'react';
+import { useState, useRef } from 'react';
+import { useBranding } from '../context/BrandingContext';
 
 export default function Settings() {
   const [activeSection, setActiveSection] = useState<'profile' | 'organization' | 'notifications' | 'security' | 'users' | 'system'>('profile');
@@ -52,6 +53,19 @@ export default function Settings() {
     department: 'Clinical Services',
     employeeId: 'EMP-001',
   });
+
+  const { clientLogoUrl, setClientLogoUrl, clientName, setClientName, sidebarColor, setSidebarColor } = useBranding();
+  const logoFileInputRef = useRef<HTMLInputElement | null>(null);
+
+  const handleLogoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = () => {
+      if (typeof reader.result === 'string') setClientLogoUrl(reader.result);
+    };
+    reader.readAsDataURL(file);
+  };
 
   const [organizationData, setOrganizationData] = useState({
     facilityName: 'MpoweredCare Residential Services',
@@ -494,29 +508,77 @@ export default function Settings() {
                   <div className="space-y-6">
                     <div>
                       <label className="block text-sm text-gray-700 mb-2">Organization Logo</label>
+                      <p className="text-xs text-gray-500 mb-3">This is the logo shown at the top of the sidebar for everyone in your organisation.</p>
                       <div className="flex items-center gap-4">
-                        <div className="w-32 h-32 border-2 border-dashed border-gray-200 rounded-lg flex items-center justify-center bg-gray-50">
-                          <Building size={48} className="text-gray-300" />
+                        <div className="w-32 h-32 border-2 border-dashed border-gray-200 rounded-lg flex items-center justify-center bg-gray-50 overflow-hidden">
+                          {clientLogoUrl ? (
+                            <img src={clientLogoUrl} alt="Organization logo" className="max-w-full max-h-full object-contain" />
+                          ) : (
+                            <Building size={48} className="text-gray-300" />
+                          )}
                         </div>
                         <div>
-                          <button className="flex items-center gap-2 px-4 py-2 text-sm bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors mb-2">
+                          <input ref={logoFileInputRef} type="file" accept="image/png,image/jpeg,image/svg+xml" onChange={handleLogoUpload} className="hidden" />
+                          <button
+                            onClick={() => logoFileInputRef.current?.click()}
+                            className="flex items-center gap-2 px-4 py-2 text-sm bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors mb-2"
+                          >
                             <Upload size={16} />
-                            Upload Logo
+                            {clientLogoUrl ? 'Replace Logo' : 'Upload Logo'}
                           </button>
+                          {clientLogoUrl && (
+                            <button
+                              onClick={() => setClientLogoUrl(null)}
+                              className="block text-xs text-red-500 hover:text-red-700 hover:underline mb-2"
+                            >
+                              Remove logo
+                            </button>
+                          )}
                           <p className="text-xs text-gray-500">PNG, JPG or SVG (max 2MB)</p>
                         </div>
                       </div>
                     </div>
 
                     <div>
-                      <label className="block text-sm text-gray-700 mb-2">Primary Color</label>
-                      <div className="flex items-center gap-4">
+                      <label className="block text-sm text-gray-700 mb-2">Organization Display Name</label>
+                      <p className="text-xs text-gray-500 mb-2">Shown next to the logo in the sidebar.</p>
+                      <input
+                        value={clientName}
+                        onChange={e => setClientName(e.target.value)}
+                        placeholder="e.g. Riverside Care Group"
+                        className="w-full max-w-md px-3 py-2 border border-gray-200 rounded-lg text-sm outline-none focus:border-blue-400"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-sm text-gray-700 mb-2">Sidebar Color</label>
+                      <p className="text-xs text-gray-500 mb-3">Pick a background colour for the navigation sidebar.</p>
+                      <div className="flex items-center gap-4 flex-wrap">
                         <input
                           type="color"
-                          defaultValue="#1D4ED8"
+                          value={sidebarColor}
+                          onChange={e => setSidebarColor(e.target.value)}
                           className="w-16 h-10 border border-gray-200 rounded cursor-pointer"
                         />
-                        <span className="text-sm text-gray-600">#1D4ED8 (Blue)</span>
+                        <span className="text-sm text-gray-600 font-mono">{sidebarColor.toUpperCase()}</span>
+                        <div className="flex items-center gap-2 ml-2 flex-wrap">
+                          {[
+                            { name: 'Slate',   value: '#111827' },
+                            { name: 'Ink',     value: '#0B1220' },
+                            { name: 'Navy',    value: '#0F172A' },
+                            { name: 'Forest',  value: '#064E3B' },
+                            { name: 'Wine',    value: '#7C2D12' },
+                            { name: 'Indigo',  value: '#312E81' },
+                          ].map(p => (
+                            <button
+                              key={p.value}
+                              onClick={() => setSidebarColor(p.value)}
+                              title={p.name}
+                              className={`w-7 h-7 rounded-full border-2 transition-all ${sidebarColor.toLowerCase() === p.value.toLowerCase() ? 'border-blue-500 scale-110' : 'border-gray-200 hover:border-gray-400'}`}
+                              style={{ backgroundColor: p.value }}
+                            />
+                          ))}
+                        </div>
                       </div>
                     </div>
                   </div>
