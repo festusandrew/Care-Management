@@ -1,8 +1,10 @@
 import { Sidebar } from '../components/Sidebar';
+import { FilterPanel } from '../components/FilterPanel';
 import { TopBar } from '../components/TopBar';
 import { Card } from '../components/Card';
 import { Badge } from '../components/Badge';
 import { QuickLogModal } from '../components/QuickLogModal';
+import { EditDailyLogModal } from '../components/EditDailyLogModal';
 import { DailyLogDetailModal } from '../components/DailyLogDetailModal';
 import { 
   Search,
@@ -31,9 +33,11 @@ export default function DailyLogs() {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedUser, setSelectedUser] = useState<any>(null);
   const [showQuickLog, setShowQuickLog] = useState(false);
+  const [showEditLog, setShowEditLog] = useState(false);
   const [showLogDetail, setShowLogDetail] = useState(false);
   const [selectedLog, setSelectedLog] = useState<any>(null);
   const [showFilters, setShowFilters] = useState(false);
+  const [filterValues, setFilterValues] = useState<Record<string, string[]>>({});
   const [viewMode, setViewMode] = useState<'all' | 'today' | 'week' | 'month'>('all');
   const [selectedMood, setSelectedMood] = useState<string>('');
   const [selectedStaff, setSelectedStaff] = useState<string>('');
@@ -197,12 +201,21 @@ export default function DailyLogs() {
     sadMood: 17,
   };
 
+  const riskLabel = (r: string) => r === 'red' ? 'High' : r === 'amber' ? 'Medium' : 'Low';
   const filteredLogs = logs.filter(log => {
     const matchesSearch = log.serviceUser.toLowerCase().includes(searchQuery.toLowerCase()) ||
                          log.notes.toLowerCase().includes(searchQuery.toLowerCase());
     const matchesMood = selectedMood === '' || log.mood === selectedMood;
     const matchesStaff = selectedStaff === '' || log.staff === selectedStaff;
-    return matchesSearch && matchesMood && matchesStaff;
+
+    const fRisk = filterValues['riskLevel'] ?? [];
+    const fType = filterValues['type']  ?? [];
+    const fStaff = filterValues['staff'] ?? [];
+    const matchesFilterRisk  = fRisk.length === 0  || fRisk.includes(riskLabel(log.riskLevel));
+    const matchesFilterType  = fType.length === 0  || fType.includes(log.type);
+    const matchesFilterStaff = fStaff.length === 0 || fStaff.includes(log.staff);
+
+    return matchesSearch && matchesMood && matchesStaff && matchesFilterRisk && matchesFilterType && matchesFilterStaff;
   });
 
   const totalLogPages = Math.max(1, Math.ceil(filteredLogs.length / LOG_PER_PAGE));
@@ -383,9 +396,9 @@ export default function DailyLogs() {
                   <option value="James Mitchell">James Mitchell</option>
                 </select>
 
-                <button className="p-2 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors">
-                  <Filter size={18} className="text-gray-600" />
-                </button>
+                <button onClick={() => setShowFilters(true)} className="p-2 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors">
+                    <Filter size={18} className="text-gray-600" />
+                  </button>
               </div>
             </div>
           </Card>
@@ -454,15 +467,15 @@ export default function DailyLogs() {
                           >
                             <Eye size={16} className="text-gray-600" />
                           </button>
-                          <button 
-                            className="p-1 hover:bg-gray-100 rounded transition-colors"
+                          <button
+                            className="p-1 hover:bg-blue-50 rounded transition-colors"
                             onClick={() => {
                               setSelectedLog(log);
-                              setSelectedUser({ id: log.userId, name: log.serviceUser });
-                              setShowQuickLog(true);
+                              setShowEditLog(true);
                             }}
+                            title="Edit Log"
                           >
-                            <Edit size={16} className="text-gray-600" />
+                            <Edit size={16} className="text-blue-500" />
                           </button>
                           <div className="relative">
                             <button 
@@ -483,10 +496,11 @@ export default function DailyLogs() {
                                   <Eye size={16} />
                                   View Details
                                 </button>
-                                <button 
+                                <button
                                   className="w-full flex items-center gap-2 px-4 py-2 text-sm text-gray-700 hover:bg-gray-50"
                                   onClick={() => {
-                                    console.log('Edit log:', log.id);
+                                    setSelectedLog(log);
+                                    setShowEditLog(true);
                                     setOpenDropdown(null);
                                   }}
                                 >
@@ -566,15 +580,37 @@ export default function DailyLogs() {
         />
       )}
       {selectedLog && (
+        <EditDailyLogModal
+          isOpen={showEditLog}
+          onClose={() => setShowEditLog(false)}
+          log={selectedLog}
+          onSave={(updated) => {
+            setLogs(prev => prev.map(l => l.id === updated.id ? updated : l));
+            setSelectedLog(updated);
+          }}
+        />
+      )}
+      {selectedLog && (
         <DailyLogDetailModal
           isOpen={showLogDetail}
           onClose={() => {
             setShowLogDetail(false);
-            setSelectedLog(null);
           }}
           log={selectedLog}
+          onEdit={() => setShowEditLog(true)}
         />
       )}
-    </div>
+    <FilterPanel
+        isOpen={showFilters}
+        onClose={() => setShowFilters(false)}
+        values={filterValues}
+        onChange={setFilterValues}
+        sections={[
+          { key: 'riskLevel', label: 'Risk Level', options: ['High', 'Medium', 'Low'] },
+          { key: 'type',      label: 'Log Type',   options: Array.from(new Set(logs.map(l => l.type))) },
+          { key: 'staff',     label: 'Staff Member', options: Array.from(new Set(logs.map(l => l.staff))) },
+        ]}
+      />
+      </div>
   );
 }

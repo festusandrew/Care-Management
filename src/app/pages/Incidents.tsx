@@ -1,4 +1,5 @@
 import { Sidebar } from '../components/Sidebar';
+import { FilterPanel } from '../components/FilterPanel';
 import { TopBar } from '../components/TopBar';
 import { Card } from '../components/Card';
 import { Badge } from '../components/Badge';
@@ -30,6 +31,8 @@ import { useState } from 'react';
 
 export default function Incidents() {
   const [searchQuery, setSearchQuery] = useState('');
+  const [showFilters, setShowFilters] = useState(false);
+  const [filterValues, setFilterValues] = useState<Record<string, string[]>>({});
   const [showReportIncident, setShowReportIncident] = useState(false);
   const [showIncidentDetails, setShowIncidentDetails] = useState(false);
   const [selectedIncident, setSelectedIncident] = useState<any>(null);
@@ -225,11 +228,19 @@ export default function Incidents() {
                          incident.incidentNumber.toLowerCase().includes(searchQuery.toLowerCase());
     const matchesSeverity = filterSeverity === '' || incident.severity === filterSeverity;
     const matchesType = filterType === '' || incident.type === filterType;
-    const matchesView = 
+    const matchesView =
       viewMode === 'open' ? incident.status === 'open' || incident.status === 'under-investigation' :
       viewMode === 'closed' ? incident.status === 'closed' || incident.status === 'resolved' :
       true;
-    return matchesSearch && matchesSeverity && matchesType && matchesView;
+
+    const fSev    = filterValues['severity'] ?? [];
+    const fType   = filterValues['type']     ?? [];
+    const fStatus = filterValues['status']   ?? [];
+    const matchesFSev    = fSev.length === 0    || fSev.includes(incident.severity);
+    const matchesFType   = fType.length === 0   || fType.includes(incident.type);
+    const matchesFStatus = fStatus.length === 0 || fStatus.includes(incident.status);
+
+    return matchesSearch && matchesSeverity && matchesType && matchesView && matchesFSev && matchesFType && matchesFStatus;
   });
 
   const getSeverityBadge = (severity: string) => {
@@ -458,9 +469,9 @@ export default function Incidents() {
                 <option value="Medical">Medical</option>
               </select>
 
-              <button className="p-2 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors">
-                <Filter size={18} className="text-gray-600" />
-              </button>
+              <button onClick={() => setShowFilters(true)} className="p-2 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors">
+                    <Filter size={18} className="text-gray-600" />
+                  </button>
             </div>
           </div>
         </Card>
@@ -653,6 +664,17 @@ export default function Incidents() {
           incident={selectedIncident}
         />
       )}
-    </div>
+    <FilterPanel
+        isOpen={showFilters}
+        onClose={() => setShowFilters(false)}
+        values={filterValues}
+        onChange={setFilterValues}
+        sections={[
+          { key: 'severity', label: 'Severity',    options: Array.from(new Set(incidents.map(i => i.severity))) },
+          { key: 'type',     label: 'Incident Type', options: Array.from(new Set(incidents.map(i => i.type))) },
+          { key: 'status',   label: 'Status',      options: Array.from(new Set(incidents.map(i => i.status))) },
+        ]}
+      />
+      </div>
   );
 }

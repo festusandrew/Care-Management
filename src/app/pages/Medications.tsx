@@ -1,4 +1,5 @@
 import { Sidebar } from '../components/Sidebar';
+import { FilterPanel } from '../components/FilterPanel';
 import { TopBar } from '../components/TopBar';
 import { Card } from '../components/Card';
 import { Badge } from '../components/Badge';
@@ -33,6 +34,8 @@ import { MedicationRecord, ServiceUser } from '../mockData/mockStore';
 
 export default function Medications() {
   const [searchQuery, setSearchQuery] = useState('');
+  const [showFilters, setShowFilters] = useState(false);
+  const [filterValues, setFilterValues] = useState<Record<string, string[]>>({});
   const [showAddMedication, setShowAddMedication] = useState(false);
   const [showMedicationDetail, setShowMedicationDetail] = useState(false);
   const [showAdministerModal, setShowAdministerModal] = useState(false);
@@ -87,11 +90,20 @@ export default function Medications() {
     complianceRate,
   };
 
+  const riskLabel = (r: string) => r === 'red' ? 'High' : r === 'amber' ? 'Medium' : 'Low';
   const filteredMedications = medications.filter(med => {
     const matchesSearch = med.serviceUser.toLowerCase().includes(searchQuery.toLowerCase()) ||
                          med.medication.toLowerCase().includes(searchQuery.toLowerCase());
     const matchesStatus = filterStatus === '' || med.status === filterStatus;
-    return matchesSearch && matchesStatus;
+
+    const fStatus = filterValues['status']    ?? [];
+    const fRisk   = filterValues['riskLevel'] ?? [];
+    const fRoute  = filterValues['route']     ?? [];
+    const matchesFilterStatus = fStatus.length === 0 || fStatus.includes(med.status);
+    const matchesFilterRisk   = fRisk.length === 0   || fRisk.includes(riskLabel(med.riskLevel));
+    const matchesFilterRoute  = fRoute.length === 0  || fRoute.includes(med.route);
+
+    return matchesSearch && matchesStatus && matchesFilterStatus && matchesFilterRisk && matchesFilterRoute;
   });
 
   const getStatusBadge = (status: string) => {
@@ -388,9 +400,9 @@ export default function Medications() {
                   <option value="night">Night (00:00-06:00)</option>
                 </select>
 
-                <button className="p-2 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors">
-                  <Filter size={18} className="text-gray-600" />
-                </button>
+                <button onClick={() => setShowFilters(true)} className="p-2 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors">
+                    <Filter size={18} className="text-gray-600" />
+                  </button>
               </div>
             </div>
           </Card>
@@ -628,6 +640,17 @@ export default function Medications() {
           onSave={handleEditScheduleSave}
         />
       )}
-    </div>
+    <FilterPanel
+        isOpen={showFilters}
+        onClose={() => setShowFilters(false)}
+        values={filterValues}
+        onChange={setFilterValues}
+        sections={[
+          { key: 'status',    label: 'Status',     options: Array.from(new Set(medications.map(m => m.status))) },
+          { key: 'riskLevel', label: 'Risk Level', options: ['High', 'Medium', 'Low'] },
+          { key: 'route',     label: 'Route',      options: Array.from(new Set(medications.map(m => m.route))) },
+        ]}
+      />
+      </div>
   );
 }

@@ -1,4 +1,5 @@
 import { Sidebar } from '../components/Sidebar';
+import { FilterPanel } from '../components/FilterPanel';
 import { TopBar } from '../components/TopBar';
 import { Card } from '../components/Card';
 import { Badge } from '../components/Badge';
@@ -7,7 +8,7 @@ import { ActivityDetailsModal } from '../components/ActivityDetailsModal';
 import { EditActivityModal } from '../components/EditActivityModal';
 import { RecordAttendanceModal } from '../components/RecordAttendanceModal';
 import { ParticipantListModal } from '../components/ParticipantListModal';
-import { 
+import {
   Search,
   Filter,
   Plus,
@@ -38,6 +39,8 @@ import { useState } from 'react';
 
 export default function Activities() {
   const [searchQuery, setSearchQuery] = useState('');
+  const [showFilters, setShowFilters] = useState(false);
+  const [filterValues, setFilterValues] = useState<Record<string, string[]>>({});
   const [showAddActivity, setShowAddActivity] = useState(false);
   const [showActivityDetails, setShowActivityDetails] = useState(false);
   const [showEditActivity, setShowEditActivity] = useState(false);
@@ -241,12 +244,22 @@ export default function Activities() {
                          activity.facilitator.toLowerCase().includes(searchQuery.toLowerCase());
     const matchesType = filterType === '' || activity.type === filterType;
     const matchesLocation = filterLocation === '' || activity.location === filterLocation;
-    const matchesView = 
+    const matchesView =
       viewMode === 'today' ? activity.date === '7 Dec 2025' :
       viewMode === 'upcoming' ? activity.status === 'scheduled' :
       viewMode === 'completed' ? activity.status === 'completed' :
       true;
-    return matchesSearch && matchesType && matchesLocation && matchesView;
+
+    const fType    = filterValues['type']        ?? [];
+    const fStatus  = filterValues['status']      ?? [];
+    const fLoc     = filterValues['location']    ?? [];
+    const fFac     = filterValues['facilitator'] ?? [];
+    const matchesFType    = fType.length === 0    || fType.includes(activity.type);
+    const matchesFStatus  = fStatus.length === 0  || fStatus.includes(activity.status);
+    const matchesFLoc     = fLoc.length === 0     || fLoc.includes(activity.location);
+    const matchesFFac     = fFac.length === 0     || fFac.includes(activity.facilitator);
+
+    return matchesSearch && matchesType && matchesLocation && matchesView && matchesFType && matchesFStatus && matchesFLoc && matchesFFac;
   });
 
   const totalActivitiesPages = Math.max(1, Math.ceil(filteredActivities.length / ACTIVITIES_PER_PAGE));
@@ -300,36 +313,33 @@ export default function Activities() {
 
   const handleEditActivity = (data: any) => {
     console.log('Activity updated:', data);
-    // In a real app, this would update the activity record
   };
 
   const handleSaveAttendance = (data: any) => {
     console.log('Attendance recorded:', data);
-    // In a real app, this would save the attendance records to the database
   };
 
   return (
     <div className="bg-gray-50 min-h-screen">
       <Sidebar activeItem="Activities" />
       <TopBar />
-      
+
       <main className="ml-0 md:ml-64 pt-20 px-4 md:px-8 pb-8 transition-all duration-300">
         <div className="max-w-[1600px] mx-auto w-full">
-          {/* Header */}
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
             <div>
               <h1 className="text-3xl text-gray-900">Activities & Programs</h1>
               <p className="text-sm text-gray-600 mt-1">Manage therapeutic, recreational, and educational activities for service users</p>
             </div>
             <div className="flex flex-wrap items-center gap-3">
-              <button 
+              <button
                 className="flex items-center gap-2 px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors text-sm font-medium"
                 onClick={() => setShowParticipantList(true)}
               >
                 <Users size={18} />
                 <span className="text-sm">View Participants</span>
               </button>
-              <button 
+              <button
                 className="flex items-center gap-2 px-4 py-2 bg-gray-50 border border-gray-100 rounded-lg hover:bg-gray-100 transition-colors text-sm text-gray-700 font-medium"
                 onClick={() => {
                   const data = JSON.stringify(activities, null, 2);
@@ -345,7 +355,7 @@ export default function Activities() {
                 <Download size={18} className="text-gray-600" />
                 <span className="text-sm">Export Report</span>
               </button>
-              <button 
+              <button
                 className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm font-semibold shadow-sm"
                 onClick={() => setShowAddActivity(true)}
               >
@@ -355,7 +365,6 @@ export default function Activities() {
             </div>
           </div>
 
-          {/* Summary Stats */}
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-6 mb-6">
             <Card>
               <div className="flex items-center justify-between">
@@ -413,22 +422,21 @@ export default function Activities() {
             </Card>
           </div>
 
-          {/* View Mode Toggle */}
           <div className="flex items-center justify-between mb-6">
             <div className="flex items-center gap-2 bg-white rounded-lg p-1 border border-gray-200">
-              <button 
+              <button
                 className={`px-4 py-2 text-sm rounded ${viewMode === 'today' ? 'bg-blue-600 text-white' : 'text-gray-600 hover:bg-gray-50'}`}
                 onClick={() => setViewMode('today')}
               >
                 Today
               </button>
-              <button 
+              <button
                 className={`px-4 py-2 text-sm rounded ${viewMode === 'upcoming' ? 'bg-blue-600 text-white' : 'text-gray-600 hover:bg-gray-50'}`}
                 onClick={() => setViewMode('upcoming')}
               >
                 Upcoming
               </button>
-              <button 
+              <button
                 className={`px-4 py-2 text-sm rounded ${viewMode === 'completed' ? 'bg-blue-600 text-white' : 'text-gray-600 hover:bg-gray-50'}`}
                 onClick={() => setViewMode('completed')}
               >
@@ -437,10 +445,8 @@ export default function Activities() {
             </div>
           </div>
 
-          {/* Filters & Search */}
           <Card className="mb-6">
             <div className="flex flex-col lg:flex-row lg:items-center gap-4">
-              {/* Search */}
               <div className="flex-1 relative">
                 <Search size={18} className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
                 <input
@@ -451,10 +457,7 @@ export default function Activities() {
                   className="w-full pl-10 pr-4 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:border-blue-500"
                 />
               </div>
-
-              {/* Dropdown Filters row */}
               <div className="flex flex-wrap items-center gap-4">
-                {/* Type Filter */}
                 <select
                   value={filterType}
                   onChange={(e) => setFilterType(e.target.value)}
@@ -469,8 +472,6 @@ export default function Activities() {
                   <option value="Recreational">Recreational</option>
                   <option value="Life Skills">Life Skills</option>
                 </select>
-
-                {/* Location Filter */}
                 <select
                   value={filterLocation}
                   onChange={(e) => setFilterLocation(e.target.value)}
@@ -486,241 +487,209 @@ export default function Activities() {
                   <option value="Kitchen">Kitchen</option>
                   <option value="Quiet Room">Quiet Room</option>
                 </select>
-
-                <button className="p-2 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors">
-                  <Filter size={18} className="text-gray-600" />
-                </button>
+                <button onClick={() => setShowFilters(true)} className="p-2 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors">
+                    <Filter size={18} className="text-gray-600" />
+                  </button>
               </div>
             </div>
           </Card>
 
-        {/* Activities Grid */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
-          {pagedActivities.map((activity) => {
-            const Icon = activity.icon;
-            return (
-              <Card key={activity.id} className="hover:shadow-lg transition-shadow">
-                <div className="flex items-start justify-between mb-4">
-                  <div className="flex items-center gap-3">
-                    <div className={`w-12 h-12 rounded-lg flex items-center justify-center ${getTypeColor(activity.color)}`}>
-                       <Icon size={24} />
-                    </div>
-                    <div>
-                      <h3 className="text-gray-900">{activity.name}</h3>
-                      <div className="text-sm text-gray-600 mt-1">{activity.type}</div>
-                    </div>
-                  </div>
-                  <div className="relative">
-                    <button
-                      className="flex items-center p-1 text-gray-500 hover:text-gray-700"
-                      onClick={() => setOpenMenuId(openMenuId === activity.id ? null : activity.id)}
-                    >
-                      <MoreVertical size={18} />
-                    </button>
-                    {openMenuId === activity.id && (
-                      <div className="absolute right-0 mt-2 w-48 bg-white border border-gray-200 rounded-md shadow-lg z-10">
-                        <button
-                          className="flex w-full items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-50"
-                          onClick={() => {
-                            console.log('View details:', activity.id);
-                            setSelectedActivity(activity);
-                            setShowActivityDetails(true);
-                            setOpenMenuId(null);
-                          }}
-                        >
-                          <Eye size={16} className="mr-2" />
-                          View
-                        </button>
-                        <button
-                          className="flex w-full items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-50"
-                          onClick={() => {
-                            console.log('Edit activity:', activity.id);
-                            setSelectedActivity(activity);
-                            setShowEditActivity(true);
-                            setOpenMenuId(null);
-                          }}
-                        >
-                          <Edit size={16} className="mr-2" />
-                          Edit
-                        </button>
-                        <button
-                          className="flex w-full items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-50"
-                          onClick={() => {
-                            console.log('Record attendance:', activity.id);
-                            setSelectedActivity(activity);
-                            setShowRecordAttendance(true);
-                            setOpenMenuId(null);
-                          }}
-                        >
-                          <CheckCircle size={16} className="mr-2" />
-                          Attendance
-                        </button>
-                        <button
-                          className="flex w-full items-center px-4 py-2 text-sm text-red-600 hover:bg-gray-50"
-                          onClick={() => {
-                            console.log('Delete activity:', activity.id);
-                            setActivities(prev => prev.filter(a => a.id !== activity.id));
-                            setOpenMenuId(null);
-                          }}
-                        >
-                          <Trash2 size={16} className="mr-2" />
-                          Delete
-                        </button>
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+            {pagedActivities.map((activity) => {
+              const Icon = activity.icon;
+              return (
+                <Card key={activity.id} className="hover:shadow-lg transition-shadow">
+                  <div className="flex items-start justify-between mb-4">
+                    <div className="flex items-center gap-3">
+                      <div className={`w-12 h-12 rounded-lg flex items-center justify-center ${getTypeColor(activity.color)}`}>
+                         <Icon size={24} />
                       </div>
-                    )}
-                  </div>
-                </div>
-
-                <div className="space-y-3">
-                  {/* Date & Time */}
-                  <div className="flex items-center gap-4">
-                    <div className="flex items-center gap-2 text-sm text-gray-700">
-                      <Calendar size={14} className="text-gray-400" />
-                      {activity.date}
+                      <div>
+                        <h3 className="text-gray-900">{activity.name}</h3>
+                        <div className="text-sm text-gray-600 mt-1">{activity.type}</div>
+                      </div>
                     </div>
-                    <div className="flex items-center gap-2 text-sm text-gray-700">
-                      <Clock size={14} className="text-gray-400" />
-                      {activity.time}
-                    </div>
-                  </div>
-
-                  {/* Location & Facilitator */}
-                  <div className="flex items-center gap-4">
-                    <div className="flex items-center gap-2 text-sm text-gray-700">
-                      <MapPin size={14} className="text-gray-400" />
-                      {activity.location}
-                    </div>
-                    <div className="flex items-center gap-2 text-sm text-gray-700">
-                      <User size={14} className="text-gray-400" />
-                      {activity.facilitator}
-                    </div>
-                  </div>
-
-                  {/* Participants */}
-                  <div>
-                    <div className="flex items-center gap-2 mb-2">
-                      <Users size={14} className="text-gray-400" />
-                      <span className="text-sm text-gray-700">
-                        {activity.participants.length}/{activity.maxCapacity} participants
-                      </span>
-                    </div>
-                    <div className="flex -space-x-2">
-                      {activity.participants.slice(0, 5).map((participant, idx) => (
-                        <div 
-                          key={idx}
-                          className="w-8 h-8 rounded-full bg-blue-100 border-2 border-white flex items-center justify-center text-xs text-blue-700"
-                          title={participant}
-                        >
-                          {participant.split(' ').map(n => n[0]).join('')}
-                        </div>
-                      ))}
-                      {activity.participants.length > 5 && (
-                        <div className="w-8 h-8 rounded-full bg-gray-100 border-2 border-white flex items-center justify-center text-xs text-gray-700">
-                          +{activity.participants.length - 5}
+                    <div className="relative">
+                      <button
+                        className="flex items-center p-1 text-gray-500 hover:text-gray-700"
+                        onClick={() => setOpenMenuId(openMenuId === activity.id ? null : activity.id)}
+                      >
+                        <MoreVertical size={18} />
+                      </button>
+                      {openMenuId === activity.id && (
+                        <div className="absolute right-0 mt-2 w-48 bg-white border border-gray-200 rounded-md shadow-lg z-10">
+                          <button
+                            className="flex w-full items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-50"
+                            onClick={() => {
+                              setSelectedActivity(activity);
+                              setShowActivityDetails(true);
+                              setOpenMenuId(null);
+                            }}
+                          >
+                            <Eye size={16} className="mr-2" />
+                            View
+                          </button>
+                          <button
+                            className="flex w-full items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-50"
+                            onClick={() => {
+                              setSelectedActivity(activity);
+                              setShowEditActivity(true);
+                              setOpenMenuId(null);
+                            }}
+                          >
+                            <Edit size={16} className="mr-2" />
+                            Edit
+                          </button>
+                          <button
+                            className="flex w-full items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-50"
+                            onClick={() => {
+                              setSelectedActivity(activity);
+                              setShowRecordAttendance(true);
+                              setOpenMenuId(null);
+                            }}
+                          >
+                            <CheckCircle size={16} className="mr-2" />
+                            Attendance
+                          </button>
+                          <button
+                            className="flex w-full items-center px-4 py-2 text-sm text-red-600 hover:bg-gray-50"
+                            onClick={() => {
+                              setActivities(prev => prev.filter(a => a.id !== activity.id));
+                              setOpenMenuId(null);
+                            }}
+                          >
+                            <Trash2 size={16} className="mr-2" />
+                            Delete
+                          </button>
                         </div>
                       )}
                     </div>
                   </div>
 
-                  {/* Status & Engagement */}
-                  <div className="flex items-center justify-between pt-3 border-t border-gray-100">
-                    <div className="flex items-center gap-2">
-                      {getStatusBadge(activity.status)}
+                  <div className="space-y-3">
+                    <div className="flex items-center gap-4">
+                      <div className="flex items-center gap-2 text-sm text-gray-700">
+                        <Calendar size={14} className="text-gray-400" />
+                        {activity.date}
+                      </div>
+                      <div className="flex items-center gap-2 text-sm text-gray-700">
+                        <Clock size={14} className="text-gray-400" />
+                        {activity.time}
+                      </div>
                     </div>
-                    <div className="flex items-center gap-2">
-                      <span className="text-xs text-gray-600">Engagement:</span>
-                      {getEngagementBadge(activity.engagement)}
+                    <div className="flex items-center gap-4">
+                      <div className="flex items-center gap-2 text-sm text-gray-700">
+                        <MapPin size={14} className="text-gray-400" />
+                        {activity.location}
+                      </div>
+                      <div className="flex items-center gap-2 text-sm text-gray-700">
+                        <User size={14} className="text-gray-400" />
+                        {activity.facilitator}
+                      </div>
                     </div>
+                    <div>
+                      <div className="flex items-center gap-2 mb-2">
+                        <Users size={14} className="text-gray-400" />
+                        <span className="text-sm text-gray-700">
+                          {activity.participants.length}/{activity.maxCapacity} participants
+                        </span>
+                      </div>
+                      <div className="flex -space-x-2">
+                        {activity.participants.slice(0, 5).map((participant, idx) => (
+                          <div
+                            key={idx}
+                            className="w-8 h-8 rounded-full bg-blue-100 border-2 border-white flex items-center justify-center text-xs text-blue-700"
+                            title={participant}
+                          >
+                            {participant.split(' ').map(n => n[0]).join('')}
+                          </div>
+                        ))}
+                        {activity.participants.length > 5 && (
+                          <div className="w-8 h-8 rounded-full bg-gray-100 border-2 border-white flex items-center justify-center text-xs text-gray-700">
+                            +{activity.participants.length - 5}
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                    <div className="flex items-center justify-between pt-3 border-t border-gray-100">
+                      <div className="flex items-center gap-2">
+                        {getStatusBadge(activity.status)}
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <span className="text-xs text-gray-600">Engagement:</span>
+                        {getEngagementBadge(activity.engagement)}
+                      </div>
+                    </div>
+                    {activity.notes && (
+                      <div className="text-sm text-gray-600 bg-gray-50 rounded p-2">
+                        {activity.notes}
+                      </div>
+                    )}
                   </div>
-
-                  {/* Notes */}
-                  {activity.notes && (
-                    <div className="text-sm text-gray-600 bg-gray-50 rounded p-2">
-                      {activity.notes}
-                    </div>
-                  )}
-                </div>
-              </Card>
-            );
-          })}
-        </div>
-
-        {/* Paginator */}
-        {totalActivitiesPages > 1 && (
-          <div className="flex items-center justify-between pt-4 mt-4 border-t border-gray-100 bg-white px-6 py-3.5 rounded-xl border border-gray-200/80 shadow-sm mb-6">
-            <span className="text-xs text-gray-500 font-medium">
-              Showing {Math.min((currentActivitiesPage - 1) * ACTIVITIES_PER_PAGE + 1, filteredActivities.length)}–
-              {Math.min(currentActivitiesPage * ACTIVITIES_PER_PAGE, filteredActivities.length)} of {filteredActivities.length} activities
-            </span>
-            <div className="flex items-center gap-1.5">
-              <button
-                onClick={() => setActivitiesPage(p => Math.max(1, p - 1))}
-                disabled={currentActivitiesPage === 1}
-                className="p-2 rounded-lg text-gray-500 hover:bg-gray-100 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
-                aria-label="Previous page"
-              >
-                <ChevronLeft size={16} />
-              </button>
-              <span className="px-3.5 py-1 text-xs bg-purple-50 text-purple-700 rounded-md font-semibold min-w-[56px] text-center">
-                {currentActivitiesPage} / {totalActivitiesPages}
-              </span>
-              <button
-                onClick={() => setActivitiesPage(p => Math.min(totalActivitiesPages, p + 1))}
-                disabled={currentActivitiesPage === totalActivitiesPages}
-                className="p-2 rounded-lg text-gray-500 hover:bg-gray-100 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
-                aria-label="Next page"
-              >
-                <ChevronRight size={16} />
-              </button>
-            </div>
+                </Card>
+              );
+            })}
           </div>
-        )}
 
-        {/* Empty State */}
-        {filteredActivities.length === 0 && (
-          <Card className="text-center py-12">
-            <ActivityIcon size={48} className="text-gray-300 mx-auto mb-4" />
-            <h3 className="text-gray-900 mb-2">No activities found</h3>
-            <p className="text-sm text-gray-600">
-              Try adjusting your filters or add a new activity
-            </p>
-          </Card>
-        )}
+          {totalActivitiesPages > 1 && (
+            <div className="flex items-center justify-between pt-4 mt-4 border-t border-gray-100 bg-white px-6 py-3.5 rounded-xl border border-gray-200/80 shadow-sm mb-6">
+              <span className="text-xs text-gray-500 font-medium">
+                Showing {Math.min((currentActivitiesPage - 1) * ACTIVITIES_PER_PAGE + 1, filteredActivities.length)}–
+                {Math.min(currentActivitiesPage * ACTIVITIES_PER_PAGE, filteredActivities.length)} of {filteredActivities.length} activities
+              </span>
+              <div className="flex items-center gap-1.5">
+                <button
+                  onClick={() => setActivitiesPage(p => Math.max(1, p - 1))}
+                  disabled={currentActivitiesPage === 1}
+                  className="p-2 rounded-lg text-gray-500 hover:bg-gray-100 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+                >
+                  <ChevronLeft size={16} />
+                </button>
+                <span className="px-3.5 py-1 text-xs bg-purple-50 text-purple-700 rounded-md font-semibold min-w-[56px] text-center">
+                  {currentActivitiesPage} / {totalActivitiesPages}
+                </span>
+                <button
+                  onClick={() => setActivitiesPage(p => Math.min(totalActivitiesPages, p + 1))}
+                  disabled={currentActivitiesPage === totalActivitiesPages}
+                  className="p-2 rounded-lg text-gray-500 hover:bg-gray-100 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+                >
+                  <ChevronRight size={16} />
+                </button>
+              </div>
+            </div>
+          )}
 
-        {/* Footer */}
-        <div className="text-center py-6 text-xs text-gray-500 border-t border-gray-100 mt-8">
-          Powered by MployUs
+          {filteredActivities.length === 0 && (
+            <Card className="text-center py-12">
+              <ActivityIcon size={48} className="text-gray-300 mx-auto mb-4" />
+              <h3 className="text-gray-900 mb-2">No activities found</h3>
+              <p className="text-sm text-gray-600">Try adjusting your filters or add a new activity</p>
+            </Card>
+          )}
+
+          <div className="text-center py-6 text-xs text-gray-500 border-t border-gray-100 mt-8">
+            Powered by MployUs
+          </div>
         </div>
-      </div>
-    </main>
+      </main>
 
-      {/* Modals */}
-      <AddActivityModal
-        isOpen={showAddActivity}
-        onClose={() => setShowAddActivity(false)}
+      <AddActivityModal isOpen={showAddActivity} onClose={() => setShowAddActivity(false)} />
+      <ActivityDetailsModal isOpen={showActivityDetails} onClose={() => setShowActivityDetails(false)} activity={selectedActivity} />
+      <EditActivityModal isOpen={showEditActivity} onClose={() => setShowEditActivity(false)} activity={selectedActivity} onSave={handleEditActivity} />
+      <RecordAttendanceModal isOpen={showRecordAttendance} onClose={() => setShowRecordAttendance(false)} activity={selectedActivity} onSave={handleSaveAttendance} />
+      <ParticipantListModal isOpen={showParticipantList} onClose={() => setShowParticipantList(false)} activity={selectedActivity} />
+    <FilterPanel
+        isOpen={showFilters}
+        onClose={() => setShowFilters(false)}
+        values={filterValues}
+        onChange={setFilterValues}
+        sections={[
+          { key: 'type',        label: 'Activity Type', options: Array.from(new Set(activities.map(a => a.type))) },
+          { key: 'status',      label: 'Status',        options: Array.from(new Set(activities.map(a => a.status))) },
+          { key: 'location',    label: 'Location',      options: Array.from(new Set(activities.map(a => a.location))) },
+          { key: 'facilitator', label: 'Facilitator',   options: Array.from(new Set(activities.map(a => a.facilitator))) },
+        ]}
       />
-      <ActivityDetailsModal
-        isOpen={showActivityDetails}
-        onClose={() => setShowActivityDetails(false)}
-        activity={selectedActivity}
-      />
-      <EditActivityModal
-        isOpen={showEditActivity}
-        onClose={() => setShowEditActivity(false)}
-        activity={selectedActivity}
-        onSave={handleEditActivity}
-      />
-      <RecordAttendanceModal
-        isOpen={showRecordAttendance}
-        onClose={() => setShowRecordAttendance(false)}
-        activity={selectedActivity}
-        onSave={handleSaveAttendance}
-      />
-      <ParticipantListModal
-        isOpen={showParticipantList}
-        onClose={() => setShowParticipantList(false)}
-        activity={selectedActivity}
-      />
-    </div>
+      </div>
   );
 }
