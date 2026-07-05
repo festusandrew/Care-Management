@@ -7,7 +7,8 @@ import {
   Plus, Search, Grid3x3, List, ArrowRight, Circle,
   Mail, Phone, MapPin, Calendar, CheckCircle, XCircle,
   AlertCircle, FileText, Download, Upload, Star, MoreVertical,
-  Briefcase, Eye, Edit, ChevronDown, X, Save, DollarSign, Send, Ban
+  Briefcase, Eye, Edit, ChevronDown, X, Save, DollarSign, Send, Ban,
+  Archive, RotateCcw, Trash2
 } from 'lucide-react';
 
 type Stage = 'applied' | 'screening' | 'interview' | 'offer' | 'onboarding' | 'hired' | 'rejected';
@@ -542,6 +543,19 @@ export default function Recruitment() {
   const [showPostJob, setShowPostJob] = useState(false);
   const [viewingJob, setViewingJob] = useState<JobPosting | null>(null);
   const [editingJob, setEditingJob] = useState<JobPosting | null>(null);
+  const [onboardingSearch, setOnboardingSearch] = useState('');
+  const [onboardingStageFilter, setOnboardingStageFilter] = useState<'all' | 'onboarding' | 'hired'>('all');
+  const [onboardingTaskList, setOnboardingTaskList] = useState<{ id: number; label: string; done: boolean }[]>([
+    { id: 1, label: 'Offer Letter Signed', done: true },
+    { id: 2, label: 'DBS Application Submitted', done: true },
+    { id: 3, label: 'Right to Work Verified', done: true },
+    { id: 4, label: 'References Received (2/2)', done: true },
+    { id: 5, label: 'Contract Signed', done: false },
+    { id: 6, label: 'Mandatory Training Assigned', done: false },
+    { id: 7, label: 'IT & System Access Setup', done: false },
+    { id: 8, label: 'Induction Day Scheduled', done: false },
+  ]);
+  const [newChecklistLabel, setNewChecklistLabel] = useState('');
 
   // Drag and drop states
   const [draggingId, setDraggingId] = useState<number | null>(null);
@@ -1012,8 +1026,40 @@ export default function Recruitment() {
         {activeTab === 'onboarding' && (
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
             <div className="lg:col-span-2 space-y-4">
-              <h2 className="text-lg text-gray-900 mb-2">Active Onboarding</h2>
-              {candidates.filter(c => c.stage === 'onboarding' || c.stage === 'hired').map(c => (
+              <div className="flex flex-col sm:flex-row sm:items-center gap-3 mb-1">
+                <h2 className="text-lg text-gray-900 flex-1">Active Onboarding</h2>
+                <div className="flex items-center gap-2">
+                  <div className="relative">
+                    <Search size={13} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+                    <input
+                      type="text"
+                      placeholder="Search candidate or role..."
+                      value={onboardingSearch}
+                      onChange={e => setOnboardingSearch(e.target.value)}
+                      className="pl-8 pr-3 py-1.5 text-xs border border-gray-200 rounded-lg bg-white outline-none focus:border-blue-400 min-w-[220px]"
+                    />
+                  </div>
+                  <select
+                    value={onboardingStageFilter}
+                    onChange={e => setOnboardingStageFilter(e.target.value as any)}
+                    className="px-2.5 py-1.5 text-xs border border-gray-200 rounded-lg bg-white outline-none focus:border-blue-400"
+                  >
+                    <option value="all">All stages</option>
+                    <option value="onboarding">Onboarding</option>
+                    <option value="hired">Hired</option>
+                  </select>
+                </div>
+              </div>
+              {candidates
+                .filter(c => c.stage === 'onboarding' || c.stage === 'hired')
+                .filter(c => onboardingStageFilter === 'all' || c.stage === onboardingStageFilter)
+                .filter(c => {
+                  const q = onboardingSearch.toLowerCase();
+                  return !q || c.name.toLowerCase().includes(q) || c.role.toLowerCase().includes(q);
+                })
+                .map(c => {
+                  const doneCount = onboardingTaskList.filter(t => t.done).length;
+                  return (
                 <Card key={c.id} className="hover:border-blue-200 cursor-pointer transition-colors">
                   <div className="flex items-center gap-4 mb-4">
                     <div className={`w-10 h-10 rounded-full ${c.color} flex items-center justify-center text-white text-sm`}>{c.initials}</div>
@@ -1026,7 +1072,7 @@ export default function Recruitment() {
                     </span>
                   </div>
                   <div className="space-y-2">
-                    {onboardingTasks.map(task => (
+                    {onboardingTaskList.map(task => (
                       <div key={task.id} className="flex items-center gap-3">
                         {task.done ? <CheckCircle size={16} className="text-green-500 shrink-0" /> : <Circle size={16} className="text-gray-300 shrink-0" />}
                         <span className={`text-sm ${task.done ? 'text-gray-500 line-through' : 'text-gray-700'}`}>{task.label}</span>
@@ -1036,14 +1082,45 @@ export default function Recruitment() {
                   <div className="mt-4 pt-4 border-t border-gray-100">
                     <div className="flex items-center justify-between mb-1">
                       <span className="text-xs text-gray-500">Completion</span>
-                      <span className="text-xs text-gray-700">4/8 tasks</span>
+                      <span className="text-xs text-gray-700">{doneCount}/{onboardingTaskList.length} tasks</span>
                     </div>
                     <div className="h-2 bg-gray-100 rounded-full overflow-hidden">
-                      <div className="h-full bg-blue-500 rounded-full" style={{ width: '50%' }} />
+                      <div className="h-full bg-blue-500 rounded-full" style={{ width: `${onboardingTaskList.length ? (doneCount / onboardingTaskList.length) * 100 : 0}%` }} />
                     </div>
                   </div>
                 </Card>
-              ))}
+                );})}
+
+              {/* Add a checklist item */}
+              <Card>
+                <div className="flex items-center gap-2">
+                  <Plus size={14} className="text-blue-500 shrink-0" />
+                  <input
+                    type="text"
+                    placeholder="Add new checklist item..."
+                    value={newChecklistLabel}
+                    onChange={e => setNewChecklistLabel(e.target.value)}
+                    onKeyDown={e => {
+                      if (e.key === 'Enter' && newChecklistLabel.trim()) {
+                        setOnboardingTaskList(prev => [...prev, { id: Date.now(), label: newChecklistLabel.trim(), done: false }]);
+                        setNewChecklistLabel('');
+                      }
+                    }}
+                    className="flex-1 px-3 py-2 text-sm border border-gray-200 rounded-lg bg-white outline-none focus:border-blue-400"
+                  />
+                  <button
+                    disabled={!newChecklistLabel.trim()}
+                    onClick={() => {
+                      if (!newChecklistLabel.trim()) return;
+                      setOnboardingTaskList(prev => [...prev, { id: Date.now(), label: newChecklistLabel.trim(), done: false }]);
+                      setNewChecklistLabel('');
+                    }}
+                    className="px-3 py-2 text-xs bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-40 disabled:cursor-not-allowed transition-colors font-medium"
+                  >
+                    Add
+                  </button>
+                </div>
+              </Card>
             </div>
             <div>
               <h2 className="text-lg text-gray-900 mb-4">Compliance Checklist</h2>
@@ -1345,21 +1422,167 @@ function CandidateProfile({ candidate, onBack, onMoveStage }: {
               </Card>
             )}
 
-            {activeTab === 'notes' && (
-              <Card>
-                <div className="text-sm text-gray-500 mb-4">Recruiter Notes</div>
-                <textarea
-                  className="w-full min-h-32 p-3 bg-gray-50 border border-gray-100 rounded-lg text-sm text-gray-700 resize-none outline-none focus:border-blue-300"
-                  defaultValue={candidate.notes}
-                  placeholder="Add notes about this candidate..."
-                />
-                <button className="mt-3 px-4 py-2 bg-blue-600 text-white rounded-lg text-sm hover:bg-blue-700 transition-colors">Save Notes</button>
-              </Card>
-            )}
+            {activeTab === 'notes' && <CandidateNotesTab candidate={candidate} />}
           </div>
         </div>
       </div>
     </main>
     </div>
+  );
+}
+
+type CandidateNote = { id: number; text: string; author: string; date: string; archived: boolean };
+
+function CandidateNotesTab({ candidate }: { candidate: Candidate }) {
+  const [notes, setNotes] = useState<CandidateNote[]>(
+    candidate.notes
+      ? [{ id: 1, text: candidate.notes, author: 'Recruiter', date: candidate.appliedDate, archived: false }]
+      : []
+  );
+  const [draft, setDraft] = useState('');
+  const [showAdd, setShowAdd] = useState(false);
+  const [editingId, setEditingId] = useState<number | null>(null);
+  const [editDraft, setEditDraft] = useState('');
+  const [showArchived, setShowArchived] = useState(false);
+
+  const today = () => new Date().toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
+
+  const addNote = () => {
+    if (!draft.trim()) return;
+    setNotes(prev => [{ id: Date.now(), text: draft.trim(), author: 'Admin Manager', date: today(), archived: false }, ...prev]);
+    setDraft('');
+    setShowAdd(false);
+  };
+
+  const startEdit = (n: CandidateNote) => { setEditingId(n.id); setEditDraft(n.text); };
+  const saveEdit = () => {
+    if (!editDraft.trim() || editingId === null) return;
+    setNotes(prev => prev.map(n => n.id === editingId ? { ...n, text: editDraft.trim() } : n));
+    setEditingId(null);
+    setEditDraft('');
+  };
+  const cancelEdit = () => { setEditingId(null); setEditDraft(''); };
+  const toggleArchive = (id: number) => setNotes(prev => prev.map(n => n.id === id ? { ...n, archived: !n.archived } : n));
+  const deleteNote = (id: number) => setNotes(prev => prev.filter(n => n.id !== id));
+
+  const visibleNotes = notes.filter(n => showArchived ? n.archived : !n.archived);
+  const activeCount = notes.filter(n => !n.archived).length;
+  const archivedCount = notes.filter(n => n.archived).length;
+
+  return (
+    <Card>
+      <div className="flex items-center justify-between mb-4 flex-wrap gap-2">
+        <div className="flex items-center gap-2">
+          <div className="text-sm text-gray-700 font-semibold">Recruiter Notes</div>
+          <span className="px-2 py-0.5 rounded-full bg-gray-100 text-gray-600 text-xs font-medium">
+            {showArchived ? archivedCount : activeCount}
+          </span>
+        </div>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => setShowArchived(v => !v)}
+            className={`flex items-center gap-1.5 px-3 py-1.5 text-xs border rounded-lg transition-colors ${
+              showArchived
+                ? 'bg-amber-50 border-amber-200 text-amber-700 font-medium'
+                : 'bg-white border-gray-200 text-gray-600 hover:bg-gray-50'
+            }`}
+          >
+            {showArchived ? 'Show Active' : `Show Archived${archivedCount > 0 ? ` (${archivedCount})` : ''}`}
+          </button>
+          <button
+            onClick={() => setShowAdd(v => !v)}
+            className="flex items-center gap-1.5 px-3 py-1.5 text-xs bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors font-medium"
+          >
+            <Plus size={13} /> Add Note
+          </button>
+        </div>
+      </div>
+
+      {showAdd && (
+        <div className="mb-4 p-3 border border-blue-100 bg-blue-50/40 rounded-lg">
+          <textarea
+            rows={3}
+            value={draft}
+            onChange={e => setDraft(e.target.value)}
+            className="w-full p-2.5 bg-white border border-gray-200 rounded-lg text-sm text-gray-700 outline-none focus:border-blue-400 resize-none"
+            placeholder={`Note about ${candidate.name}...`}
+          />
+          <div className="flex items-center justify-end gap-2 mt-2">
+            <button onClick={() => { setShowAdd(false); setDraft(''); }} className="px-3 py-1.5 text-xs text-gray-600 border border-gray-200 bg-white rounded-lg hover:bg-gray-50 transition-colors">Cancel</button>
+            <button onClick={addNote} disabled={!draft.trim()} className="px-3 py-1.5 text-xs bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-40 transition-colors font-medium">Save Note</button>
+          </div>
+        </div>
+      )}
+
+      {visibleNotes.length === 0 ? (
+        <div className="py-8 text-center text-sm text-gray-400">
+          {showArchived ? 'No archived notes.' : 'No notes yet.'}
+        </div>
+      ) : (
+        <div className="space-y-2">
+          {visibleNotes.map(n => (
+            <div
+              key={n.id}
+              className={`p-3 border rounded-lg group transition-colors ${
+                n.archived ? 'border-amber-100 bg-amber-50/30' : 'border-gray-100'
+              }`}
+            >
+              <div className="flex items-start justify-between gap-3">
+                <div className="text-xs text-gray-500 flex items-center gap-2 flex-wrap">
+                  <span className="font-semibold text-gray-700">{n.author}</span>
+                  <span className="text-gray-300">·</span>
+                  <span>{n.date}</span>
+                  {n.archived && (
+                    <span className="px-1.5 py-0.5 rounded-full bg-amber-100 text-amber-700 text-[10px] font-semibold uppercase tracking-wide">Archived</span>
+                  )}
+                </div>
+                {editingId !== n.id && (
+                  <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity shrink-0">
+                    <button
+                      onClick={() => startEdit(n)}
+                      className="p-1 text-blue-400 hover:text-blue-600 hover:bg-blue-50 rounded transition-colors"
+                      title="Edit note"
+                    >
+                      <Edit size={13} />
+                    </button>
+                    <button
+                      onClick={() => toggleArchive(n.id)}
+                      className={`p-1 rounded transition-colors ${n.archived ? 'text-blue-500 hover:bg-blue-50' : 'text-gray-400 hover:text-amber-600 hover:bg-amber-50'}`}
+                      title={n.archived ? 'Restore note' : 'Archive note'}
+                    >
+                      {n.archived ? <RotateCcw size={13} /> : <Archive size={13} />}
+                    </button>
+                    <button
+                      onClick={() => deleteNote(n.id)}
+                      className="p-1 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded transition-colors"
+                      title="Delete note"
+                    >
+                      <Trash2 size={13} />
+                    </button>
+                  </div>
+                )}
+              </div>
+
+              {editingId === n.id ? (
+                <div className="mt-2">
+                  <textarea
+                    rows={3}
+                    value={editDraft}
+                    onChange={e => setEditDraft(e.target.value)}
+                    className="w-full p-2.5 bg-white border border-blue-200 rounded-lg text-sm text-gray-700 outline-none focus:border-blue-400 resize-none"
+                  />
+                  <div className="flex items-center justify-end gap-2 mt-2">
+                    <button onClick={cancelEdit} className="px-3 py-1.5 text-xs text-gray-600 border border-gray-200 bg-white rounded-lg hover:bg-gray-50 transition-colors">Cancel</button>
+                    <button onClick={saveEdit} disabled={!editDraft.trim()} className="px-3 py-1.5 text-xs bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-40 transition-colors font-medium">Save Changes</button>
+                  </div>
+                </div>
+              ) : (
+                <p className="text-sm text-gray-700 leading-relaxed mt-1 whitespace-pre-wrap">{n.text}</p>
+              )}
+            </div>
+          ))}
+        </div>
+      )}
+    </Card>
   );
 }
