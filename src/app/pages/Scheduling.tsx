@@ -1,4 +1,5 @@
 import { Sidebar } from '../components/Sidebar';
+import { FilterPanel } from '../components/FilterPanel';
 import { TopBar } from '../components/TopBar';
 import { Card } from '../components/Card';
 import { Badge } from '../components/Badge';
@@ -20,6 +21,8 @@ import { useNavigation } from '../context/NavigationContext';
 export default function Scheduling() {
   const { setCurrentPage } = useNavigation();
   const [searchQuery, setSearchQuery] = useState('');
+  const [showFilters, setShowFilters] = useState(false);
+  const [filterValues, setFilterValues] = useState<Record<string, string[]>>({});
   const [showAddShift, setShowAddShift] = useState(false);
   const [showAssignStaff, setShowAssignStaff] = useState(false);
   const [showEditShift, setShowEditShift] = useState(false);
@@ -86,7 +89,18 @@ export default function Scheduling() {
       shift.location.toLowerCase().includes(searchQuery.toLowerCase());
     const matchesRole = filterRole === '' || shift.role === filterRole;
     const matchesStatus = filterStatus === '' || shift.status === filterStatus;
-    return matchesSearch && matchesRole && matchesStatus;
+
+    const fRole     = filterValues['role']     ?? [];
+    const fStatus   = filterValues['status']   ?? [];
+    const fLocation = filterValues['location'] ?? [];
+    const fCoverage = filterValues['coverage'] ?? [];
+    const matchesFRole     = fRole.length === 0     || fRole.includes(shift.role);
+    const matchesFStatus   = fStatus.length === 0   || fStatus.includes(shift.status);
+    const matchesFLocation = fLocation.length === 0 || fLocation.includes(shift.location);
+    const coverageLabel    = shift.staffName ? 'Filled' : 'Unfilled';
+    const matchesFCoverage = fCoverage.length === 0 || fCoverage.includes(coverageLabel);
+
+    return matchesSearch && matchesRole && matchesStatus && matchesFRole && matchesFStatus && matchesFLocation && matchesFCoverage;
   });
 
   const getStatusBadge = (status: string) => {
@@ -345,10 +359,10 @@ export default function Scheduling() {
               <option value="unfilled">Unfilled</option>
               <option value="cancelled">Cancelled</option>
             </select>
-            <button className="flex items-center gap-2 px-3 py-2 bg-gray-50 border border-gray-100 rounded-xl hover:bg-gray-100 transition-colors text-sm text-gray-600">
-              <Filter size={15} />
-              More Filters
-            </button>
+            <button onClick={() => setShowFilters(true)} className="flex items-center gap-2 px-3 py-2 bg-gray-50 border border-gray-100 rounded-xl hover:bg-gray-100 transition-colors text-sm text-gray-600">
+                <Filter size={15} />
+                More Filters
+              </button>
           </div>
         </Card>
 
@@ -589,6 +603,19 @@ export default function Scheduling() {
       <ShiftDetailModal isOpen={showShiftDetail} onClose={() => setShowShiftDetail(false)} shift={selectedShift} />
       <DuplicateShiftModal isOpen={showDuplicateShift} onClose={() => setShowDuplicateShift(false)} shift={selectedShift} onDuplicate={() => {}} />
       <DeleteShiftModal isOpen={showDeleteShift} onClose={() => setShowDeleteShift(false)} shift={selectedShift} onDelete={() => {}} />
-    </div>
+    <FilterPanel
+        isOpen={showFilters}
+        onClose={() => setShowFilters(false)}
+        values={filterValues}
+        onChange={setFilterValues}
+        title="More Filters"
+        sections={[
+          { key: 'role',     label: 'Role',     options: Array.from(new Set(shifts.map(s => s.role))) },
+          { key: 'status',   label: 'Status',   options: Array.from(new Set(shifts.map(s => s.status))) },
+          { key: 'location', label: 'Location', options: Array.from(new Set(shifts.map(s => s.location))) },
+          { key: 'coverage', label: 'Coverage', options: ['Filled', 'Unfilled'] },
+        ]}
+      />
+      </div>
   );
 }

@@ -44,6 +44,9 @@ export default function LeaveRequests() {
     type: 'Annual Leave',
     from: '',
     to: '',
+    startTime: '',
+    endTime: '',
+    hours: '',
     reason: '',
     status: 'approved' as LeaveStatus
   });
@@ -102,7 +105,8 @@ export default function LeaveRequests() {
     if (!member) return;
     const from = new Date(logLeaveForm.from);
     const to = new Date(logLeaveForm.to);
-    const days = Math.max(1, Math.round((to.getTime() - from.getTime()) / 86400000) + 1);
+    const dayCount = Math.max(1, Math.round((to.getTime() - from.getTime()) / 86400000) + 1);
+    const hours = logLeaveForm.hours ? Number(logLeaveForm.hours) : dayCount * 8;
     const fmt = (d: Date) => d.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
 
     const newRequest = {
@@ -114,7 +118,9 @@ export default function LeaveRequests() {
       type: logLeaveForm.type,
       from: fmt(from),
       to: fmt(to),
-      days,
+      startTime: logLeaveForm.startTime,
+      endTime: logLeaveForm.endTime,
+      hours,
       reason: logLeaveForm.reason || 'Logged by admin.',
       status: logLeaveForm.status,
       adminNote: 'Logged manually by admin.',
@@ -124,7 +130,7 @@ export default function LeaveRequests() {
       const created = await api.logLeaveRequest(newRequest);
       setLeaveRequests(rs => [created, ...rs]);
       setShowLogLeave(false);
-      setLogLeaveForm({ staffId: '', type: 'Annual Leave', from: '', to: '', reason: '', status: 'approved' });
+      setLogLeaveForm({ staffId: '', type: 'Annual Leave', from: '', to: '', startTime: '', endTime: '', hours: '', reason: '', status: 'approved' });
       triggerToast(`Leave logged on behalf of ${member.name}`);
     } catch (err) {
       console.error(err);
@@ -172,13 +178,13 @@ export default function LeaveRequests() {
   const pendingCount = leaveRequests.filter(r => r.status === 'pending').length;
   const approvedCount = leaveRequests.filter(r => r.status === 'approved').length;
   const declinedCount = leaveRequests.filter(r => r.status === 'declined').length;
-  const totalDays = leaveRequests.reduce((sum, r) => r.status === 'approved' ? sum + r.days : sum, 0);
+  const totalHours = leaveRequests.reduce((sum, r) => r.status === 'approved' ? sum + r.hours : sum, 0);
 
   const stats = [
     { label: 'Pending Approval', value: pendingCount, color: 'text-amber-600', bg: 'bg-amber-50', icon: <Clock size={20} className="text-amber-600" /> },
     { label: 'Approved Requests', value: approvedCount, color: 'text-green-600', bg: 'bg-green-50', icon: <CheckCircle size={20} className="text-green-600" /> },
     { label: 'Declined Requests', value: declinedCount, color: 'text-red-600', bg: 'bg-red-50', icon: <XCircle size={20} className="text-red-500" /> },
-    { label: 'Approved Leave Days', value: `${totalDays}d`, color: 'text-blue-600', bg: 'bg-blue-50', icon: <CalendarRange size={20} className="text-blue-600" /> },
+    { label: 'Approved Leave Hours', value: `${totalHours}h`, color: 'text-blue-600', bg: 'bg-blue-50', icon: <CalendarRange size={20} className="text-blue-600" /> },
   ];
 
   return (
@@ -274,8 +280,10 @@ export default function LeaveRequests() {
                 >
                   <option value="">All Leave Types</option>
                   <option value="Annual Leave">Annual Leave</option>
+                  <option value="TOIL (Time Off In Lieu)">TOIL</option>
                   <option value="Medical Leave">Medical Leave</option>
                   <option value="Emergency Leave">Emergency Leave</option>
+                  <option value="Study Leave">Study Leave</option>
                   <option value="Maternity / Paternity Leave">Parental Leave</option>
                   <option value="Compassionate Leave">Compassionate Leave</option>
                   <option value="Unpaid Leave">Unpaid Leave</option>
@@ -313,7 +321,7 @@ export default function LeaveRequests() {
                     <th className="py-4 px-6 text-xs font-bold text-gray-500 uppercase tracking-wider">Staff Member</th>
                     <th className="py-4 px-6 text-xs font-bold text-gray-500 uppercase tracking-wider">Leave Type</th>
                     <th className="py-4 px-6 text-xs font-bold text-gray-500 uppercase tracking-wider">Requested Dates</th>
-                    <th className="py-4 px-6 text-xs font-bold text-gray-500 uppercase tracking-wider">Days</th>
+                    <th className="py-4 px-6 text-xs font-bold text-gray-500 uppercase tracking-wider">Hours</th>
                     <th className="py-4 px-6 text-xs font-bold text-gray-500 uppercase tracking-wider">Submitted</th>
                     <th className="py-4 px-6 text-xs font-bold text-gray-500 uppercase tracking-wider">Conflicts / Warning</th>
                     <th className="py-4 px-6 text-xs font-bold text-gray-500 uppercase tracking-wider">Status</th>
@@ -340,17 +348,22 @@ export default function LeaveRequests() {
                         <td className="py-4 px-6">
                           <span className={`text-xs px-2.5 py-1 rounded-full font-semibold border ${
                             r.type === 'Annual Leave'    ? 'bg-blue-50 text-blue-700 border-blue-200' :
+                            r.type === 'TOIL (Time Off In Lieu)' ? 'bg-purple-50 text-purple-700 border-purple-200' :
                             r.type === 'Medical Leave'  ? 'bg-rose-50 text-rose-700 border-rose-200' :
                             r.type === 'Emergency Leave'? 'bg-orange-50 text-orange-700 border-orange-200' :
+                            r.type === 'Study Leave'    ? 'bg-teal-50 text-teal-700 border-teal-200' :
                             'bg-gray-50 text-gray-600 border-gray-200'
                           }`}>{r.type}</span>
                         </td>
                         <td className="py-4 px-6">
                           <div className="text-sm font-medium text-gray-900">{r.from}</div>
                           {r.from !== r.to && <div className="text-xs text-gray-500">to {r.to}</div>}
+                          {(r.startTime || r.endTime) && (
+                            <div className="text-xs text-gray-400 mt-0.5">{r.startTime || '—'} – {r.endTime || '—'}</div>
+                          )}
                         </td>
                         <td className="py-4 px-6 text-sm font-semibold text-gray-800">
-                          {r.days}d
+                          {r.hours}h
                         </td>
                         <td className="py-4 px-6 text-xs text-gray-500">
                           {r.submittedOn}
@@ -466,8 +479,10 @@ export default function LeaveRequests() {
                     onChange={e => setLogLeaveForm(f => ({ ...f, type: e.target.value }))}
                   >
                     <option>Annual Leave</option>
+                    <option>TOIL (Time Off In Lieu)</option>
                     <option>Medical Leave</option>
                     <option>Emergency Leave</option>
+                    <option>Study Leave</option>
                     <option>Maternity / Paternity Leave</option>
                     <option>Compassionate Leave</option>
                     <option>Unpaid Leave</option>
@@ -508,14 +523,45 @@ export default function LeaveRequests() {
                     onChange={e => setLogLeaveForm(f => ({ ...f, to: e.target.value }))}
                   />
                 </div>
+
+                <div>
+                  <label className="block text-xs text-gray-500 mb-1 font-semibold">Start Time <span className="text-gray-400">(optional)</span></label>
+                  <input
+                    type="time"
+                    className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm outline-none focus:border-blue-400"
+                    value={logLeaveForm.startTime}
+                    onChange={e => setLogLeaveForm(f => ({ ...f, startTime: e.target.value }))}
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs text-gray-500 mb-1 font-semibold">End Time <span className="text-gray-400">(optional)</span></label>
+                  <input
+                    type="time"
+                    className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm outline-none focus:border-blue-400"
+                    value={logLeaveForm.endTime}
+                    onChange={e => setLogLeaveForm(f => ({ ...f, endTime: e.target.value }))}
+                  />
+                </div>
               </div>
 
-              {logLeaveForm.from && logLeaveForm.to && (
-                <div className="flex items-center gap-2 text-xs text-blue-700 bg-blue-50 border border-blue-100 rounded-lg px-3 py-2">
-                  <CalendarRange size={13} />
-                  {Math.max(1, Math.round((new Date(logLeaveForm.to).getTime() - new Date(logLeaveForm.from).getTime()) / 86400000) + 1)} day(s) selected
-                </div>
-              )}
+              <div>
+                <label className="block text-xs text-gray-500 mb-1 font-semibold">Hours *</label>
+                <input
+                  type="number"
+                  min="0.5"
+                  step="0.5"
+                  placeholder="e.g. 8"
+                  className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm outline-none focus:border-blue-400"
+                  value={logLeaveForm.hours}
+                  onChange={e => setLogLeaveForm(f => ({ ...f, hours: e.target.value }))}
+                />
+                {logLeaveForm.from && logLeaveForm.to && !logLeaveForm.hours && (
+                  <p className="text-xs text-gray-400 mt-1">
+                    Suggested: {Math.max(1, Math.round((new Date(logLeaveForm.to).getTime() - new Date(logLeaveForm.from).getTime()) / 86400000) + 1) * 8} hours (based on selected date range at 8h/day)
+                  </p>
+                )}
+              </div>
 
               <div>
                 <label className="block text-xs text-gray-500 mb-1 font-semibold">Notes / Reason <span className="text-gray-400">(optional)</span></label>
@@ -603,7 +649,7 @@ export default function LeaveRequests() {
                 </div>
                 <div className="bg-gray-50 rounded-xl p-3 border border-gray-100">
                   <p className="text-xs text-gray-500 mb-0.5 font-medium">Duration</p>
-                  <p className="text-gray-900 font-semibold">{detailRequest.days} day{detailRequest.days > 1 ? 's' : ''}</p>
+                  <p className="text-gray-900 font-semibold">{detailRequest.hours} hour{detailRequest.hours !== 1 ? 's' : ''}</p>
                 </div>
                 <div className="bg-gray-50 rounded-xl p-3 border border-gray-100">
                   <p className="text-xs text-gray-500 mb-0.5 font-medium">From</p>
@@ -613,6 +659,14 @@ export default function LeaveRequests() {
                   <p className="text-xs text-gray-500 mb-0.5 font-medium">To</p>
                   <p className="text-gray-900 font-semibold">{detailRequest.to}</p>
                 </div>
+                {(detailRequest.startTime || detailRequest.endTime) && (
+                  <div className="bg-gray-50 rounded-xl p-3 border border-gray-100 col-span-2">
+                    <p className="text-xs text-gray-500 mb-0.5 font-medium">Time</p>
+                    <p className="text-gray-900 font-semibold">
+                      {detailRequest.startTime || '—'} – {detailRequest.endTime || '—'}
+                    </p>
+                  </div>
+                )}
               </div>
 
               <div className="bg-gray-50 rounded-xl p-3 border border-gray-100">
