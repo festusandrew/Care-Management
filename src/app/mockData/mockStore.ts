@@ -22,7 +22,9 @@ export type LeaveRequest = {
   type: string;
   from: string;
   to: string;
-  days: number;
+  hours: number;
+  startTime?: string;
+  endTime?: string;
   reason: string;
   submittedOn: string;
   status: LeaveStatus;
@@ -62,6 +64,7 @@ export type StaffMember = {
   avatarUrl: string;
   nextShift: string;
   qualifications: string[];
+  nationalityRegion?: 'EU' | 'Non-EU';
 };
 
 export type Alert = {
@@ -257,6 +260,7 @@ let staffMembers: StaffMember[] = [
     avatarUrl: 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=800&auto=format&fit=crop&q=60',
     nextShift: '7 Dec, 07:00 - 15:00',
     qualifications: ['Care Certificate', 'First Aid'],
+    nationalityRegion: 'EU',
   },
   {
     id: 2,
@@ -270,6 +274,7 @@ let staffMembers: StaffMember[] = [
     avatarUrl: 'https://images.unsplash.com/photo-1531427186611-ecfd6d936c79?w=800&auto=format&fit=crop&q=60',
     nextShift: '7 Dec, 07:00 - 15:00',
     qualifications: ['NVQ Level 3', 'Medication Admin'],
+    nationalityRegion: 'Non-EU',
   },
   {
     id: 3,
@@ -283,6 +288,7 @@ let staffMembers: StaffMember[] = [
     avatarUrl: 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=800&auto=format&fit=crop&q=60',
     nextShift: '15 Dec, 15:00 - 23:00',
     qualifications: ['Care Certificate'],
+    nationalityRegion: 'EU',
   },
   {
     id: 4,
@@ -296,6 +302,7 @@ let staffMembers: StaffMember[] = [
     avatarUrl: 'https://images.unsplash.com/photo-1519085360753-af0119f7cbe7?w=800&auto=format&fit=crop&q=60',
     nextShift: '7 Dec, 09:00 - 17:00',
     qualifications: ['Level 5 Diploma', 'Safeguarding Lead'],
+    nationalityRegion: 'Non-EU',
   },
   {
     id: 7,
@@ -309,6 +316,7 @@ let staffMembers: StaffMember[] = [
     avatarUrl: 'https://images.unsplash.com/photo-1594824419266-9b16414777a8?w=800&auto=format&fit=crop&q=60',
     nextShift: '7 Dec, 08:00 - 16:00',
     qualifications: ['NMC Registered', 'Advanced First Aid'],
+    nationalityRegion: 'EU',
   }
 ];
 
@@ -321,11 +329,11 @@ let clockEvents: ClockEvent[] = [
 ];
 
 let leaveRequests: LeaveRequest[] = [
-  { id: 1, staffId: 1, name: 'Mary Thompson',  employeeId: 'EMP-0001', avatarUrl: 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=800&auto=format&fit=crop&q=60', role: 'Support Worker',        type: 'Annual Leave',    from: '23 Jun 2026', to: '27 Jun 2026', days: 5, reason: 'Family holiday booked in advance.',          submittedOn: '8 Jun 2026',  status: 'pending',  adminNote: '' },
-  { id: 2, staffId: 4, name: 'James Mitchell',  employeeId: 'EMP-0004', avatarUrl: 'https://images.unsplash.com/photo-1519085360753-af0119f7cbe7?w=800&auto=format&fit=crop&q=60', role: 'Care Manager',          type: 'Medical Leave',   from: '15 Jun 2026', to: '16 Jun 2026', days: 2, reason: 'GP appointment and recovery.',               submittedOn: '9 Jun 2026',  status: 'pending',  adminNote: '' },
-  { id: 3, staffId: 2, name: 'John Davies',     employeeId: 'EMP-0002', avatarUrl: 'https://images.unsplash.com/photo-1531427186611-ecfd6d936c79?w=800&auto=format&fit=crop&q=60', role: 'Senior Support Worker', type: 'Annual Leave',    from: '30 Jun 2026', to: '4 Jul 2026',  days: 5, reason: 'Pre-booked holiday abroad.',                submittedOn: '5 Jun 2026',  status: 'approved', adminNote: 'Cover arranged with agency.' },
-  { id: 4, staffId: 7, name: 'Lisa Anderson',   employeeId: 'EMP-0007', avatarUrl: 'https://images.unsplash.com/photo-1594824419266-9b16414777a8?w=800&auto=format&fit=crop&q=60', role: 'Nurse',                 type: 'Emergency Leave', from: '11 Jun 2026', to: '11 Jun 2026', days: 1, reason: 'Family emergency — urgent travel required.', submittedOn: '10 Jun 2026', status: 'approved', adminNote: '' },
-  { id: 5, staffId: 3, name: 'Sarah Williams',  employeeId: 'EMP-0003', avatarUrl: 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=800&auto=format&fit=crop&q=60', role: 'Support Worker',        type: 'Annual Leave',    from: '14 Jun 2026', to: '14 Jun 2026', days: 1, reason: 'Personal appointment.',                     submittedOn: '7 Jun 2026',  status: 'declined', adminNote: 'Insufficient cover on that date.' },
+  { id: 1, staffId: 1, name: 'Mary Thompson',  employeeId: 'EMP-0001', avatarUrl: 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=800&auto=format&fit=crop&q=60', role: 'Support Worker',        type: 'Annual Leave',    from: '23 Jun 2026', to: '27 Jun 2026', hours: 40, reason: 'Family holiday booked in advance.',          submittedOn: '8 Jun 2026',  status: 'pending',  adminNote: '' },
+  { id: 2, staffId: 4, name: 'James Mitchell',  employeeId: 'EMP-0004', avatarUrl: 'https://images.unsplash.com/photo-1519085360753-af0119f7cbe7?w=800&auto=format&fit=crop&q=60', role: 'Care Manager',          type: 'Medical Leave',   from: '15 Jun 2026', to: '16 Jun 2026', hours: 16, reason: 'GP appointment and recovery.',               submittedOn: '9 Jun 2026',  status: 'pending',  adminNote: '' },
+  { id: 3, staffId: 2, name: 'John Davies',     employeeId: 'EMP-0002', avatarUrl: 'https://images.unsplash.com/photo-1531427186611-ecfd6d936c79?w=800&auto=format&fit=crop&q=60', role: 'Senior Support Worker', type: 'Annual Leave',    from: '30 Jun 2026', to: '4 Jul 2026',  hours: 40, reason: 'Pre-booked holiday abroad.',                submittedOn: '5 Jun 2026',  status: 'approved', adminNote: 'Cover arranged with agency.' },
+  { id: 4, staffId: 7, name: 'Lisa Anderson',   employeeId: 'EMP-0007', avatarUrl: 'https://images.unsplash.com/photo-1594824419266-9b16414777a8?w=800&auto=format&fit=crop&q=60', role: 'Nurse',                 type: 'Emergency Leave', from: '11 Jun 2026', to: '11 Jun 2026', hours: 8, reason: 'Family emergency — urgent travel required.', submittedOn: '10 Jun 2026', status: 'approved', adminNote: '' },
+  { id: 5, staffId: 3, name: 'Sarah Williams',  employeeId: 'EMP-0003', avatarUrl: 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=800&auto=format&fit=crop&q=60', role: 'Support Worker',        type: 'Annual Leave',    from: '14 Jun 2026', to: '14 Jun 2026', hours: 8, reason: 'Personal appointment.',                     submittedOn: '7 Jun 2026',  status: 'declined', adminNote: 'Insufficient cover on that date.' },
 ];
 
 let attendanceHistory: HistoryRecord[] = [
@@ -500,11 +508,11 @@ let medications: MedicationRecord[] = [
 
 export const mockStore = {
   getAlerts: () => [...alerts],
-  
+
   getServiceUsers: () => [...serviceUsers],
-  
+
   getServiceUserById: (id: number) => serviceUsers.find(u => u.id === id),
-  
+
   addServiceUser: (user: Omit<ServiceUser, 'id'>) => {
     const newId = serviceUsers.length > 0 ? Math.max(...serviceUsers.map(u => u.id)) + 1 : 1;
     const newUser: ServiceUser = { ...user, id: newId };
@@ -513,12 +521,12 @@ export const mockStore = {
   },
 
   getStaffMembers: () => [...staffMembers],
-  
+
   addStaffMember: (staff: Omit<StaffMember, 'id'>) => {
     const newId = staffMembers.length > 0 ? Math.max(...staffMembers.map(s => s.id)) + 1 : 1;
     const newStaff: StaffMember = { ...staff, id: newId };
     staffMembers.push(newStaff);
-    
+
     // Add an initial clock event for the new staff member as well
     const newEvent: ClockEvent = {
       staffId: newId,
@@ -533,12 +541,12 @@ export const mockStore = {
       role: newStaff.role
     };
     clockEvents.push(newEvent);
-    
+
     return newStaff;
   },
 
   getClockEvents: () => [...clockEvents],
-  
+
   clockOutStaff: (staffId: number, note?: string) => {
     const nowStr = new Date().toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
     let updatedEvent: ClockEvent | null = null;
@@ -566,7 +574,7 @@ export const mockStore = {
   },
 
   getLeaveRequests: () => [...leaveRequests],
-  
+
   updateLeaveRequestStatus: (id: number, status: LeaveStatus, note?: string) => {
     let updatedRequest: LeaveRequest | null = null;
     leaveRequests = leaveRequests.map(r => {
