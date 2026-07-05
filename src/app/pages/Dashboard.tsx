@@ -46,27 +46,21 @@ export default function Dashboard() {
           <div onClick={(e) => {
             const target = e.target as HTMLElement;
 
-            // Check if clicked inside Shift Coverage card
             const shiftCoverageCard = target.closest('div[data-name="Card"]');
             if (shiftCoverageCard && shiftCoverageCard.textContent?.includes('Shift Coverage')) {
               setCurrentPage('leave-requests');
               return;
             }
 
-            // Check if clicked element is a "View Details" button or "View Reports" button
             const button = target.closest('div[data-name="Button"]');
 
             if (button) {
               const buttonText = button.textContent;
 
               if (buttonText?.includes('View Details')) {
-                // Determine which alert based on position in DOM
                 const container = button.closest('div[data-name="Container"]');
-                const allContainers = document.querySelectorAll('div[data-name="Container"]');
-                let alertIndex = -1;
-
-                // Find the alert index by checking the text content
                 const containerText = container?.textContent || '';
+                let alertIndex = -1;
                 if (containerText.includes('Missed Medication')) alertIndex = 0;
                 else if (containerText.includes('Care Plan Reviews')) alertIndex = 1;
                 else if (containerText.includes('Unresolved Incidents')) alertIndex = 2;
