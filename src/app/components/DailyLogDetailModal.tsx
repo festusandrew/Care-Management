@@ -4,9 +4,10 @@ interface DailyLogDetailModalProps {
   isOpen: boolean;
   onClose: () => void;
   log: any;
+  onEdit?: () => void;
 }
 
-export function DailyLogDetailModal({ isOpen, onClose, log }: DailyLogDetailModalProps) {
+export function DailyLogDetailModal({ isOpen, onClose, log, onEdit }: DailyLogDetailModalProps) {
   if (!isOpen || !log) return null;
 
   const getMoodIcon = (mood: string) => {
@@ -37,49 +38,50 @@ export function DailyLogDetailModal({ isOpen, onClose, log }: DailyLogDetailModa
 
   const moodColors = getMoodColor(log.mood);
 
-  // Extended mock data for detailed view
+  // Prefer edited fields on the log, fall back to sensible defaults for older records
   const detailedLog = {
     ...log,
-    medicationTaken: log.type === 'Medication' ? [
+    medicationTaken: log.medicationTaken ?? (log.type === 'Medication' ? [
       { name: 'Sertraline 50mg', time: '08:00 AM', status: 'Taken' },
       { name: 'Vitamin D 1000IU', time: '08:00 AM', status: 'Taken' }
-    ] : null,
-    mealDetails: {
+    ] : null),
+    mealDetails: log.mealDetails ?? {
       breakfast: { consumed: '100%', time: '08:30 AM', notes: 'Full portion of cereal and toast' },
       lunch: { consumed: '80%', time: '12:30 PM', notes: 'Most of sandwich, left some salad' },
       dinner: { consumed: '90%', time: '18:00 PM', notes: 'Enjoyed pasta dish' },
       snacks: { consumed: 'Yes', notes: 'Apple in afternoon, biscuit in evening' }
     },
-    sleepDetails: {
+    sleepDetails: log.sleepDetails ?? {
       bedtime: '22:00',
       wakeTime: '07:00',
       quality: log.sleep?.includes('Good') || log.sleep?.includes('Excellent') ? 'Good' : 'Fair',
       interruptions: log.sleep?.includes('Good') || log.sleep?.includes('Excellent') ? 'None' : 'Woke 2 times',
       notes: 'Settled well. No disturbances.'
     },
-    activitiesDetailed: [
+    activitiesDetailed: log.activitiesDetailed ?? [
       { time: '10:00 AM', activity: 'Group therapy session', duration: '60 mins', participation: 'Active' },
       { time: '14:00 PM', activity: 'Art class', duration: '90 mins', participation: 'Engaged' },
       { time: '16:00 PM', activity: 'Free time / Reading', duration: '60 mins', participation: 'Independent' }
     ],
-    behaviorObservations: [
+    behaviorObservations: log.behaviorObservations ?? [
       { time: '09:00 AM', observation: 'Calm and cooperative during morning routine', level: 'positive' },
       { time: '11:30 AM', observation: 'Showed good engagement in therapy', level: 'positive' },
       { time: '15:00 PM', observation: 'Slight frustration during art activity but managed well', level: 'neutral' }
     ],
-    vitalSigns: log.type === 'Medication' ? {
+    vitalSigns: log.vitalSigns ?? (log.type === 'Medication' ? {
       bloodPressure: '120/80',
       heartRate: '72 bpm',
       temperature: '36.5°C',
       timeChecked: '08:00 AM'
-    } : null,
-    communicationNotes: 'Verbal communication clear. Expressed feelings appropriately. Used calming strategies when needed.',
-    staffObservations: 'Overall positive day. Sarah demonstrated good self-regulation skills and engaged well with structured activities.',
-    followUpRequired: log.riskLevel === 'amber' || log.riskLevel === 'red' ? [
-      'Monitor mood patterns over next few days',
-      'Continue with current activity schedule',
-      'Review progress in next care team meeting'
-    ] : null
+    } : null),
+    communicationNotes: log.communicationNotes ?? 'Verbal communication clear. Expressed feelings appropriately. Used calming strategies when needed.',
+    staffObservations: log.staffObservations ?? 'Overall positive day. Sarah demonstrated good self-regulation skills and engaged well with structured activities.',
+    followUpRequired: (log.followUpRequired && log.followUpRequired.length > 0) ? log.followUpRequired
+      : (log.riskLevel === 'amber' || log.riskLevel === 'red') ? [
+        'Monitor mood patterns over next few days',
+        'Continue with current activity schedule',
+        'Review progress in next care team meeting'
+      ] : null
   };
 
   return (
@@ -355,7 +357,10 @@ export function DailyLogDetailModal({ isOpen, onClose, log }: DailyLogDetailModa
             >
               Close
             </button>
-            <button className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
+            <button
+              onClick={() => { onClose(); onEdit?.(); }}
+              className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+            >
               <Edit size={18} />
               Edit Log
             </button>
