@@ -17,6 +17,7 @@ import Financial from './pages/Financial';
 import Analytics from './pages/Analytics';
 import LeaveRequests from './pages/LeaveRequests';
 import { NavigationProvider, useNavigation } from './context/NavigationContext';
+import { BrandingProvider } from './context/BrandingContext';
 
 function AppContent() {
   const { currentPage, pageParams } = useNavigation();
@@ -67,9 +68,11 @@ function AppContent() {
 
 export default function App() {
   return (
+    <BrandingProvider>
     <NavigationProvider>
       {/* MARKER-MAKE-KIT-INVOKED */}
       <AppContent />
     </NavigationProvider>
+    </BrandingProvider>
   );
 }
