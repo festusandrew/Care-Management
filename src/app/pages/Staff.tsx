@@ -5,6 +5,8 @@ import { Card } from '../components/Card';
 import { Badge } from '../components/Badge';
 import { useNavigation } from '../context/NavigationContext';
 import { AddStaffMemberModal } from '../components/AddStaffMemberModal';
+import { EditStaffModal } from '../components/EditStaffModal';
+import { FilterPanel } from '../components/FilterPanel';
 import {
   Search, Filter, Plus, Phone, Mail, FileText, CalendarDays,
   MoreVertical, Eye, Download, Grid3x3, List, MapPin, Edit,
@@ -68,7 +70,7 @@ export default function Staff() {
   const [declineNote, setDeclineNote] = useState('');
   const [detailRequest, setDetailRequest] = useState<LeaveRequest | null>(null);
   const [showLogLeave, setShowLogLeave] = useState(false);
-  const [logLeaveForm, setLogLeaveForm] = useState({ staffId: '', type: 'Annual Leave', from: '', to: '', reason: '', status: 'approved' as LeaveStatus });
+  const [logLeaveForm, setLogLeaveForm] = useState({ staffId: '', type: 'Annual Leave', from: '', to: '', startTime: '', endTime: '', hours: '', reason: '', status: 'approved' as LeaveStatus });
   const [confirmClockOut, setConfirmClockOut] = useState<ClockEvent | null>(null);
   const [clockOutNote, setClockOutNote] = useState('');
   const [toastMessage, setToastMessage] = useState<string | null>(null);
@@ -77,6 +79,9 @@ export default function Staff() {
 
   // Async API State
   const [staffMembers, setStaffMembers] = useState<StaffMember[]>([]);
+  const [editStaffTarget, setEditStaffTarget] = useState<StaffMember | null>(null);
+  const [showFilters, setShowFilters] = useState(false);
+  const [filterValues, setFilterValues] = useState<Record<string, string[]>>({});
   const [clockEvents, setClockEvents] = useState<ClockEvent[]>([]);
   const [leaveRequests, setLeaveRequests] = useState<LeaveRequest[]>([]);
   const [attendanceHistory, setAttendanceHistory] = useState<HistoryRecord[]>([]);
@@ -156,7 +161,8 @@ export default function Staff() {
     if (!member) return;
     const from = new Date(logLeaveForm.from);
     const to   = new Date(logLeaveForm.to);
-    const days = Math.max(1, Math.round((to.getTime() - from.getTime()) / 86400000) + 1);
+    const dayCount = Math.max(1, Math.round((to.getTime() - from.getTime()) / 86400000) + 1);
+    const hours = logLeaveForm.hours ? Number(logLeaveForm.hours) : dayCount * 8;
     const fmt  = (d: Date) => d.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
     
     const newRequest = {
@@ -168,7 +174,9 @@ export default function Staff() {
       type: logLeaveForm.type,
       from: fmt(from),
       to: fmt(to),
-      days,
+      startTime: logLeaveForm.startTime,
+      endTime: logLeaveForm.endTime,
+      hours,
       reason: logLeaveForm.reason || 'Logged by admin.',
       status: logLeaveForm.status,
       adminNote: 'Logged manually by admin.',
@@ -178,7 +186,7 @@ export default function Staff() {
       const created = await api.logLeaveRequest(newRequest);
       setLeaveRequests(rs => [created, ...rs]);
       setShowLogLeave(false);
-      setLogLeaveForm({ staffId: '', type: 'Annual Leave', from: '', to: '', reason: '', status: 'approved' });
+      setLogLeaveForm({ staffId: '', type: 'Annual Leave', from: '', to: '', startTime: '', endTime: '', hours: '', reason: '', status: 'approved' });
     } catch (err) {
       console.error(err);
     }
@@ -194,19 +202,35 @@ export default function Staff() {
   const uniqueDates = [...new Set(filteredHistory.map(r => r.date))].sort((a, b) => b.localeCompare(a));
   const totalHistoryHours = filteredHistory.reduce((s, r) => s + (r.hoursWorked ?? 0), 0);
 
+  const euCount    = staffMembers.filter(s => s.nationalityRegion === 'EU').length;
+  const nonEuCount = staffMembers.filter(s => s.nationalityRegion === 'Non-EU').length;
+  const total      = staffMembers.length;
+  const pct = (n: number) => total > 0 ? Math.round((n / total) * 100) : 0;
   const stats = [
-    { label: 'Total Staff', value: staffMembers.length.toString(), trend: '+1 this month' },
+    { label: 'Total Staff', value: total.toString(), trend: '+1 this month' },
     { label: 'On Leave', value: staffMembers.filter(s => s.status === 'On Leave').length.toString(), color: 'text-gray-600' },
     { label: 'Pending Timesheets', value: '5', color: 'text-amber-600' },
     { label: 'Compliance Due', value: '2', color: 'text-red-600' },
+    { label: 'EU Staff',     value: euCount.toString(),    color: 'text-blue-600',   trend: `${pct(euCount)}% of workforce` },
+    { label: 'Non-EU Staff', value: nonEuCount.toString(), color: 'text-purple-600', trend: `${pct(nonEuCount)}% of workforce` },
   ];
 
   const filteredStaff = staffMembers.filter(staff => {
-    const matchesSearch = staff.name.toLowerCase().includes(searchQuery.toLowerCase()) || 
+    const matchesSearch = staff.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
                           staff.email.toLowerCase().includes(searchQuery.toLowerCase());
     const matchesRole = filterRole === '' || staff.role === filterRole;
     const matchesStatus = filterStatus === '' || staff.status === filterStatus;
-    return matchesSearch && matchesRole && matchesStatus;
+
+    const fRole     = filterValues['role']     ?? [];
+    const fStatus   = filterValues['status']   ?? [];
+    const fLocation = filterValues['location'] ?? [];
+    const fRegion   = filterValues['nationalityRegion'] ?? [];
+    const matchesFRole     = fRole.length === 0     || fRole.includes(staff.role);
+    const matchesFStatus   = fStatus.length === 0   || fStatus.includes(staff.status);
+    const matchesFLocation = fLocation.length === 0 || fLocation.includes(staff.location);
+    const matchesFRegion   = fRegion.length === 0   || (staff.nationalityRegion && fRegion.includes(staff.nationalityRegion));
+
+    return matchesSearch && matchesRole && matchesStatus && matchesFRole && matchesFStatus && matchesFLocation && matchesFRegion;
   });
 
   const getStatusBadge = (status: string) => {
@@ -251,7 +275,7 @@ export default function Staff() {
           </div>
 
         {/* Stats Row */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4 mb-6">
           {stats.map((stat, index) => (
             <Card key={index}>
               <div className="text-sm text-gray-600 mb-1">{stat.label}</div>
@@ -661,7 +685,7 @@ export default function Staff() {
                             {r.from !== r.to && <div className="text-xs text-gray-500">to {r.to}</div>}
                           </td>
                           <td className="py-3.5 px-4">
-                            <span className="text-sm text-gray-800">{r.days}d</span>
+                            <span className="text-sm text-gray-800">{r.hours}h</span>
                           </td>
                           <td className="py-3.5 px-4 text-sm text-gray-500">{r.submittedOn}</td>
                           <td className="py-3.5 px-4">
@@ -730,7 +754,7 @@ export default function Staff() {
             </div>
             
             <div className="flex flex-wrap items-center gap-3">
-              <button className="flex items-center gap-2 px-4 py-2 bg-gray-50 border border-gray-100 rounded-lg hover:bg-gray-100 transition-colors">
+              <button onClick={() => setShowFilters(true)} className="flex items-center gap-2 px-4 py-2 bg-gray-50 border border-gray-100 rounded-lg hover:bg-gray-100 transition-colors">
                 <Filter size={18} className="text-gray-600" />
                 <span className="text-sm text-gray-700">Filters</span>
               </button>
@@ -839,7 +863,8 @@ export default function Staff() {
                             <FileText size={16} />
                             View Timesheet
                           </button>
-                          <button 
+                          <button
+                            onClick={() => { setEditStaffTarget(staff); setOpenDropdown(null); }}
                             className="w-full flex items-center gap-2 px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 border-t border-gray-100"
                           >
                             <Edit size={16} />
@@ -1021,7 +1046,7 @@ export default function Staff() {
                                   <CalendarDays size={16} />
                                   View Schedule
                                 </button>
-                                <button 
+                                <button
                                   className="w-full flex items-center gap-2 px-4 py-2 text-sm text-gray-700 hover:bg-gray-50"
                                   onClick={() => {
                                     setCurrentPage('staff-profile', { id: staff.id, showTimesheet: true });
@@ -1030,6 +1055,13 @@ export default function Staff() {
                                 >
                                   <FileText size={16} />
                                   View Timesheet
+                                </button>
+                                <button
+                                  className="w-full flex items-center gap-2 px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 border-t border-gray-100"
+                                  onClick={() => { setEditStaffTarget(staff); setOpenDropdown(null); }}
+                                >
+                                  <Edit size={16} />
+                                  Edit Staff
                                 </button>
                               </div>
                             )}
@@ -1120,8 +1152,10 @@ export default function Staff() {
                     onChange={e => setLogLeaveForm(f => ({ ...f, type: e.target.value }))}
                   >
                     <option>Annual Leave</option>
+                    <option>TOIL (Time Off In Lieu)</option>
                     <option>Medical Leave</option>
                     <option>Emergency Leave</option>
+                    <option>Study Leave</option>
                     <option>Maternity / Paternity Leave</option>
                     <option>Compassionate Leave</option>
                     <option>Unpaid Leave</option>
@@ -1165,15 +1199,46 @@ export default function Staff() {
                     onChange={e => setLogLeaveForm(f => ({ ...f, to: e.target.value }))}
                   />
                 </div>
+
+                <div>
+                  <label className="block text-xs text-gray-500 mb-1">Start Time <span className="text-gray-400">(optional)</span></label>
+                  <input
+                    type="time"
+                    className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm outline-none focus:border-blue-400"
+                    value={logLeaveForm.startTime}
+                    onChange={e => setLogLeaveForm(f => ({ ...f, startTime: e.target.value }))}
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs text-gray-500 mb-1">End Time <span className="text-gray-400">(optional)</span></label>
+                  <input
+                    type="time"
+                    className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm outline-none focus:border-blue-400"
+                    value={logLeaveForm.endTime}
+                    onChange={e => setLogLeaveForm(f => ({ ...f, endTime: e.target.value }))}
+                  />
+                </div>
               </div>
 
-              {/* Duration preview */}
-              {logLeaveForm.from && logLeaveForm.to && (
-                <div className="flex items-center gap-2 text-xs text-blue-700 bg-blue-50 border border-blue-100 rounded-lg px-3 py-2">
-                  <CalendarRange size={13} />
-                  {Math.max(1, Math.round((new Date(logLeaveForm.to).getTime() - new Date(logLeaveForm.from).getTime()) / 86400000) + 1)} day(s) selected
-                </div>
-              )}
+              {/* Hours */}
+              <div>
+                <label className="block text-xs text-gray-500 mb-1">Hours *</label>
+                <input
+                  type="number"
+                  min="0.5"
+                  step="0.5"
+                  placeholder="e.g. 8"
+                  className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm outline-none focus:border-blue-400"
+                  value={logLeaveForm.hours}
+                  onChange={e => setLogLeaveForm(f => ({ ...f, hours: e.target.value }))}
+                />
+                {logLeaveForm.from && logLeaveForm.to && !logLeaveForm.hours && (
+                  <p className="text-xs text-gray-400 mt-1">
+                    Suggested: {Math.max(1, Math.round((new Date(logLeaveForm.to).getTime() - new Date(logLeaveForm.from).getTime()) / 86400000) + 1) * 8} hours (based on selected date range at 8h/day)
+                  </p>
+                )}
+              </div>
 
               {/* Reason */}
               <div>
@@ -1240,7 +1305,7 @@ export default function Staff() {
                 </div>
                 <div className="bg-gray-50 rounded-xl p-3 border border-gray-100">
                   <p className="text-xs text-gray-500 mb-0.5">Duration</p>
-                  <p className="text-gray-900">{detailRequest.days} day{detailRequest.days > 1 ? 's' : ''}</p>
+                  <p className="text-gray-900">{detailRequest.hours} hour{detailRequest.hours !== 1 ? 's' : ''}</p>
                 </div>
                 <div className="bg-gray-50 rounded-xl p-3 border border-gray-100">
                   <p className="text-xs text-gray-500 mb-0.5">From</p>
@@ -1250,6 +1315,12 @@ export default function Staff() {
                   <p className="text-xs text-gray-500 mb-0.5">To</p>
                   <p className="text-gray-900">{detailRequest.to}</p>
                 </div>
+                {(detailRequest.startTime || detailRequest.endTime) && (
+                  <div className="bg-gray-50 rounded-xl p-3 border border-gray-100 col-span-2">
+                    <p className="text-xs text-gray-500 mb-0.5">Time</p>
+                    <p className="text-gray-900">{detailRequest.startTime || '—'} – {detailRequest.endTime || '—'}</p>
+                  </div>
+                )}
               </div>
               <div className="bg-gray-50 rounded-xl p-3 border border-gray-100">
                 <p className="text-xs text-gray-500 mb-1 flex items-center gap-1"><MessageSquare size={11} /> Reason from staff</p>
@@ -1400,6 +1471,31 @@ export default function Staff() {
           {toastMessage}
         </div>
       )}
+
+      {editStaffTarget && (
+        <EditStaffModal
+          isOpen={true}
+          onClose={() => setEditStaffTarget(null)}
+          staff={editStaffTarget}
+          onSave={(updated) => {
+            setStaffMembers(prev => prev.map(s => s.id === updated.id ? updated : s));
+            setEditStaffTarget(null);
+          }}
+        />
+      )}
+
+      <FilterPanel
+        isOpen={showFilters}
+        onClose={() => setShowFilters(false)}
+        values={filterValues}
+        onChange={setFilterValues}
+        sections={[
+          { key: 'role',              label: 'Role',              options: Array.from(new Set(staffMembers.map(s => s.role))) },
+          { key: 'status',            label: 'Status',            options: Array.from(new Set(staffMembers.map(s => s.status))) },
+          { key: 'location',          label: 'Location',          options: Array.from(new Set(staffMembers.map(s => s.location))) },
+          { key: 'nationalityRegion', label: 'Nationality Region', options: ['EU', 'Non-EU'] },
+        ]}
+      />
     </div>
   );
 }
