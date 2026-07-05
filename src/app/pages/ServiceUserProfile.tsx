@@ -23,6 +23,7 @@ import {
   Edit,
   Plus,
   ChevronRight,
+  ChevronLeft,
   Download,
   Share2,
   Heart,
@@ -203,20 +204,33 @@ export function ServiceUserProfile({ userId, onBack }: ServiceUserProfileProps) 
   ];
 
   const submitCarePlan = () => {
-    if (!carePlanForm.startDate || (!carePlanForm.name && !carePlanForm.customName)) return;
+    if ((!editingCarePlan && !carePlanForm.startDate) || (!carePlanForm.name && !carePlanForm.customName)) return;
     const name = carePlanForm.name === 'Other (custom)' ? carePlanForm.customName : carePlanForm.name;
     const fmt = (d: string) => new Date(d).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
-    setCarePlans(ps => [{
-      id: Date.now(),
-      name,
-      status: 'active',
-      lastReviewed: fmt(carePlanForm.startDate),
-      nextReview: carePlanForm.nextReview ? fmt(carePlanForm.nextReview) : '—',
-      progress: 0,
-      createdBy: carePlanForm.createdBy,
-      goals: carePlanForm.goals,
-      frequency: carePlanForm.frequency,
-    }, ...ps]);
+    if (editingCarePlan) {
+      setCarePlans(ps => ps.map(p => p.id === editingCarePlan.id ? {
+        ...p,
+        name,
+        lastReviewed: carePlanForm.startDate ? fmt(carePlanForm.startDate) : p.lastReviewed,
+        nextReview: carePlanForm.nextReview ? fmt(carePlanForm.nextReview) : p.nextReview,
+        createdBy: carePlanForm.createdBy || p.createdBy,
+        goals: carePlanForm.goals,
+        frequency: carePlanForm.frequency,
+      } : p));
+      setEditingCarePlan(null);
+    } else {
+      setCarePlans(ps => [{
+        id: Date.now(),
+        name,
+        status: 'active',
+        lastReviewed: fmt(carePlanForm.startDate),
+        nextReview: carePlanForm.nextReview ? fmt(carePlanForm.nextReview) : '—',
+        progress: 0,
+        createdBy: carePlanForm.createdBy,
+        goals: carePlanForm.goals,
+        frequency: carePlanForm.frequency,
+      }, ...ps]);
+    }
     setCarePlanForm({ name: '', customName: '', goals: '', frequency: '', createdBy: '', startDate: '', nextReview: '', notes: '' });
     setShowCreateCarePlan(false);
   };
@@ -276,11 +290,24 @@ export function ServiceUserProfile({ userId, onBack }: ServiceUserProfileProps) 
   const VISIT_PER_PAGE = 3;
   const [visitPage, setVisitPage] = useState(1);
   const [visitFilter, setVisitFilter] = useState({ visitor: '', relation: '', purpose: '', from: '', to: '' });
+  const CARE_PLAN_PER_PAGE = 3;
+  const [carePlanPage, setCarePlanPage] = useState(1);
+  const RISK_PER_PAGE = 5;
+  const [riskPage, setRiskPage] = useState(1);
+  const [editingCarePlan, setEditingCarePlan] = useState<any>(null);
 
   const filteredVisits = visitLogs.filter(v => {
     if (visitFilter.visitor  && !v.visitorName.toLowerCase().includes(visitFilter.visitor.toLowerCase()))  return false;
     if (visitFilter.relation && !v.relation.toLowerCase().includes(visitFilter.relation.toLowerCase()))    return false;
     if (visitFilter.purpose  && visitFilter.purpose !== v.purpose)                                         return false;
+    if (visitFilter.from) {
+      const vd = new Date(v.date); const fd = new Date(visitFilter.from);
+      if (!isNaN(vd.getTime()) && !isNaN(fd.getTime()) && vd < fd) return false;
+    }
+    if (visitFilter.to) {
+      const vd = new Date(v.date); const td = new Date(visitFilter.to);
+      if (!isNaN(vd.getTime()) && !isNaN(td.getTime()) && vd > td) return false;
+    }
     return true;
   });
   const totalVisitPages = Math.max(1, Math.ceil(filteredVisits.length / VISIT_PER_PAGE));
@@ -701,7 +728,21 @@ export function ServiceUserProfile({ userId, onBack }: ServiceUserProfileProps) 
                   <option>Legal / advocacy</option>
                   <option>Other</option>
                 </select>
-                {(visitFilter.visitor || visitFilter.relation || visitFilter.purpose) && (
+                <input
+                  type="date"
+                  value={visitFilter.from}
+                  onChange={e => { setVisitFilter(f => ({ ...f, from: e.target.value })); setVisitPage(1); }}
+                  className="px-2.5 py-1.5 text-xs border border-gray-200 rounded-lg bg-white outline-none focus:border-blue-400 focus:ring-1 focus:ring-blue-100 transition-all"
+                  title="From date"
+                />
+                <input
+                  type="date"
+                  value={visitFilter.to}
+                  onChange={e => { setVisitFilter(f => ({ ...f, to: e.target.value })); setVisitPage(1); }}
+                  className="px-2.5 py-1.5 text-xs border border-gray-200 rounded-lg bg-white outline-none focus:border-blue-400 focus:ring-1 focus:ring-blue-100 transition-all"
+                  title="To date"
+                />
+                {(visitFilter.visitor || visitFilter.relation || visitFilter.purpose || visitFilter.from || visitFilter.to) && (
                   <button
                     onClick={() => { setVisitFilter({ visitor: '', relation: '', purpose: '', from: '', to: '' }); setVisitPage(1); }}
                     className="flex items-center gap-1 px-2.5 py-1.5 text-xs text-gray-500 bg-white border border-gray-200 rounded-lg hover:bg-gray-100 transition-colors"
@@ -924,7 +965,7 @@ export function ServiceUserProfile({ userId, onBack }: ServiceUserProfileProps) 
                 </button>
               </div>
               <div className="space-y-3">
-                {carePlans.map((plan) => (
+                {carePlans.slice((carePlanPage - 1) * CARE_PLAN_PER_PAGE, carePlanPage * CARE_PLAN_PER_PAGE).map((plan) => (
                   <div key={plan.id} className="border border-gray-100 rounded-xl p-4 hover:border-emerald-200 transition-colors">
                     <div className="flex items-start justify-between mb-2">
                       <div className="flex-1 min-w-0 pr-3">
@@ -941,6 +982,26 @@ export function ServiceUserProfile({ userId, onBack }: ServiceUserProfileProps) 
                       </div>
                       <div className="flex items-center gap-2 shrink-0">
                         <span className="inline-flex items-center px-2 py-0.5 rounded text-xs bg-emerald-50 text-emerald-700 border border-emerald-200">Active</span>
+                        <button
+                          onClick={() => {
+                            setEditingCarePlan(plan);
+                            setCarePlanForm({
+                              name: plan.name,
+                              customName: '',
+                              goals: plan.goals || '',
+                              frequency: plan.frequency || '',
+                              createdBy: plan.createdBy || '',
+                              startDate: '',
+                              nextReview: '',
+                              notes: ''
+                            });
+                            setShowCreateCarePlan(true);
+                          }}
+                          className="p-1.5 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+                          title="Edit Care Plan"
+                        >
+                          <Edit size={13} />
+                        </button>
                       </div>
                     </div>
                     <div className="flex items-center gap-3 mt-3">
@@ -957,6 +1018,22 @@ export function ServiceUserProfile({ userId, onBack }: ServiceUserProfileProps) 
                   </div>
                 ))}
               </div>
+              {carePlans.length > CARE_PLAN_PER_PAGE && (
+                <div className="flex items-center justify-between mt-4 pt-4 border-t border-gray-100">
+                  <span className="text-xs text-gray-500">
+                    Showing {Math.min((carePlanPage - 1) * CARE_PLAN_PER_PAGE + 1, carePlans.length)}–{Math.min(carePlanPage * CARE_PLAN_PER_PAGE, carePlans.length)} of {carePlans.length} plans
+                  </span>
+                  <div className="flex items-center gap-2">
+                    <button onClick={() => setCarePlanPage(p => Math.max(1, p - 1))} disabled={carePlanPage === 1} className="p-1.5 rounded-lg text-gray-500 hover:bg-gray-100 disabled:opacity-30 disabled:cursor-not-allowed transition-colors">
+                      <ChevronLeft size={14} />
+                    </button>
+                    <span className="text-xs text-gray-600 min-w-[52px] text-center">{carePlanPage} / {Math.max(1, Math.ceil(carePlans.length / CARE_PLAN_PER_PAGE))}</span>
+                    <button onClick={() => setCarePlanPage(p => p + 1)} disabled={carePlanPage >= Math.ceil(carePlans.length / CARE_PLAN_PER_PAGE)} className="p-1.5 rounded-lg text-gray-500 hover:bg-gray-100 disabled:opacity-30 disabled:cursor-not-allowed transition-colors">
+                      <ChevronRight size={14} />
+                    </button>
+                  </div>
+                </div>
+              )}
             </div>
 
             {/* Risk Assessments */}
@@ -986,7 +1063,7 @@ export function ServiceUserProfile({ userId, onBack }: ServiceUserProfileProps) 
                     </tr>
                   </thead>
                   <tbody>
-                    {riskAssessments.map((risk) => (
+                    {riskAssessments.slice((riskPage - 1) * RISK_PER_PAGE, riskPage * RISK_PER_PAGE).map((risk) => (
                       <React.Fragment key={risk.id}>
                         <tr className="border-b border-gray-50 hover:bg-gray-50 transition-colors">
                           <td className="px-4 py-3 text-sm text-gray-900">{risk.area}</td>
@@ -1005,6 +1082,22 @@ export function ServiceUserProfile({ userId, onBack }: ServiceUserProfileProps) 
                   </tbody>
                 </table>
               </div>
+              {riskAssessments.length > RISK_PER_PAGE && (
+                <div className="flex items-center justify-between mt-4 pt-4 border-t border-gray-100">
+                  <span className="text-xs text-gray-500">
+                    Showing {Math.min((riskPage - 1) * RISK_PER_PAGE + 1, riskAssessments.length)}–{Math.min(riskPage * RISK_PER_PAGE, riskAssessments.length)} of {riskAssessments.length} risks
+                  </span>
+                  <div className="flex items-center gap-2">
+                    <button onClick={() => setRiskPage(p => Math.max(1, p - 1))} disabled={riskPage === 1} className="p-1.5 rounded-lg text-gray-500 hover:bg-gray-100 disabled:opacity-30 disabled:cursor-not-allowed transition-colors">
+                      <ChevronLeft size={14} />
+                    </button>
+                    <span className="text-xs text-gray-600 min-w-[52px] text-center">{riskPage} / {Math.max(1, Math.ceil(riskAssessments.length / RISK_PER_PAGE))}</span>
+                    <button onClick={() => setRiskPage(p => p + 1)} disabled={riskPage >= Math.ceil(riskAssessments.length / RISK_PER_PAGE)} className="p-1.5 rounded-lg text-gray-500 hover:bg-gray-100 disabled:opacity-30 disabled:cursor-not-allowed transition-colors">
+                      <ChevronRight size={14} />
+                    </button>
+                  </div>
+                </div>
+              )}
             </div>
 
             {/* Goals & Outcomes */}
@@ -1765,10 +1858,10 @@ export function ServiceUserProfile({ userId, onBack }: ServiceUserProfileProps) 
                 <ClipboardList size={17} className="text-emerald-600" />
               </div>
               <div className="flex-1">
-                <h2 className="text-base text-gray-900">Create Care Plan</h2>
+                <h2 className="text-base text-gray-900">{editingCarePlan ? 'Edit Care Plan' : 'Create Care Plan'}</h2>
                 <p className="text-xs text-gray-500">{user.name}</p>
               </div>
-              <button onClick={() => setShowCreateCarePlan(false)} className="p-1.5 hover:bg-gray-100 rounded-lg transition-colors">
+              <button onClick={() => { setShowCreateCarePlan(false); setEditingCarePlan(null); }} className="p-1.5 hover:bg-gray-100 rounded-lg transition-colors">
                 <X size={18} className="text-gray-400" />
               </button>
             </div>
@@ -1891,17 +1984,17 @@ export function ServiceUserProfile({ userId, onBack }: ServiceUserProfileProps) 
 
             <div className="flex justify-end gap-3 px-6 py-4 border-t border-gray-100 shrink-0">
               <button
-                onClick={() => setShowCreateCarePlan(false)}
+                onClick={() => { setShowCreateCarePlan(false); setEditingCarePlan(null); }}
                 className="px-4 py-2 text-sm text-gray-600 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors"
               >
                 Cancel
               </button>
               <button
                 onClick={submitCarePlan}
-                disabled={!carePlanForm.startDate || (!carePlanForm.name || (carePlanForm.name === 'Other (custom)' && !carePlanForm.customName))}
+                disabled={(!editingCarePlan && !carePlanForm.startDate) || (!carePlanForm.name || (carePlanForm.name === 'Other (custom)' && !carePlanForm.customName))}
                 className="flex items-center gap-2 px-4 py-2 text-sm bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                <Save size={14} /> Create Care Plan
+                <Save size={14} /> {editingCarePlan ? 'Save Changes' : 'Create Care Plan'}
               </button>
             </div>
           </div>
