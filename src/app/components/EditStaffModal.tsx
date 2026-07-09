@@ -45,6 +45,8 @@ export function EditStaffModal({ isOpen, onClose, staff, onSave }: EditStaffModa
         emergencyContact: staff.emergencyContact || '',
         emergencyPhone: staff.emergencyPhone || '',
         bankReference: staff.bankReference || '',
+        rateType: staff.rateType || 'hourly',
+        rateAmount: staff.rateAmount ?? '',
       });
       setActiveTab('personal');
       setShowErrors(false);
@@ -223,6 +225,19 @@ export function EditStaffModal({ isOpen, onClose, staff, onSave }: EditStaffModa
                 <div>
                   <label className={LABEL}>Days Employed</label>
                   <input type="number" value={form.daysEmployed} onChange={e => set({ daysEmployed: Number(e.target.value) })} className={INPUT} />
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className={LABEL}>Rate Type</label>
+                  <select value={form.rateType} onChange={e => set({ rateType: e.target.value })} className={`${INPUT} bg-white`}>
+                    <option value="hourly">Hourly Rate</option>
+                    <option value="monthly">Monthly Salary</option>
+                  </select>
+                </div>
+                <div>
+                  <label className={LABEL}>Rate Amount (£)</label>
+                  <input type="number" step="0.01" value={form.rateAmount} onChange={e => set({ rateAmount: e.target.value === '' ? '' : Number(e.target.value) })} className={INPUT} />
                 </div>
               </div>
             </>

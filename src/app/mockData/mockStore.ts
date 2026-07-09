@@ -65,6 +65,8 @@ export type StaffMember = {
   nextShift: string;
   qualifications: string[];
   nationalityRegion?: 'EU' | 'Non-EU';
+  rateType?: 'hourly' | 'monthly';
+  rateAmount?: number;
 };
 
 export type Alert = {
@@ -261,6 +263,8 @@ let staffMembers: StaffMember[] = [
     nextShift: '7 Dec, 07:00 - 15:00',
     qualifications: ['Care Certificate', 'First Aid'],
     nationalityRegion: 'EU',
+    rateType: 'hourly',
+    rateAmount: 13.50,
   },
   {
     id: 2,
@@ -275,6 +279,8 @@ let staffMembers: StaffMember[] = [
     nextShift: '7 Dec, 07:00 - 15:00',
     qualifications: ['NVQ Level 3', 'Medication Admin'],
     nationalityRegion: 'Non-EU',
+    rateType: 'hourly',
+    rateAmount: 17.50,
   },
   {
     id: 3,
@@ -289,6 +295,8 @@ let staffMembers: StaffMember[] = [
     nextShift: '15 Dec, 15:00 - 23:00',
     qualifications: ['Care Certificate'],
     nationalityRegion: 'EU',
+    rateType: 'hourly',
+    rateAmount: 13.50,
   },
   {
     id: 4,
@@ -303,6 +311,8 @@ let staffMembers: StaffMember[] = [
     nextShift: '7 Dec, 09:00 - 17:00',
     qualifications: ['Level 5 Diploma', 'Safeguarding Lead'],
     nationalityRegion: 'Non-EU',
+    rateType: 'monthly',
+    rateAmount: 3200.00,
   },
   {
     id: 7,
@@ -317,6 +327,8 @@ let staffMembers: StaffMember[] = [
     nextShift: '7 Dec, 08:00 - 16:00',
     qualifications: ['NMC Registered', 'Advanced First Aid'],
     nationalityRegion: 'EU',
+    rateType: 'hourly',
+    rateAmount: 25.00,
   }
 ];
 

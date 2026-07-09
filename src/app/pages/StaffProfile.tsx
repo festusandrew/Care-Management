@@ -74,6 +74,8 @@ export default function StaffProfile({ id, showTimesheet = false }: StaffProfile
       emergencyPhone: '+44 7700 900902',
       bankReference: '•••• 4521',
       qualifications: ['Care Certificate', 'First Aid (Expires: Aug 2026)', 'Medication Level 2'],
+      rateType: 'hourly',
+      rateAmount: 13.50,
     },
     2: {
       employeeId: 'EMP-0002',
@@ -101,6 +103,8 @@ export default function StaffProfile({ id, showTimesheet = false }: StaffProfile
       emergencyPhone: '+44 7700 900802',
       bankReference: '•••• 7812',
       qualifications: ['NVQ Level 3', 'Medication Admin', 'Safeguarding Lead'],
+      rateType: 'hourly',
+      rateAmount: 17.50,
     },
   } as any)[staffId] || {
     employeeId: 'EMP-0001',
@@ -128,6 +132,8 @@ export default function StaffProfile({ id, showTimesheet = false }: StaffProfile
     emergencyPhone: '+44 7700 900902',
     bankReference: '•••• 4521',
     qualifications: ['Care Certificate', 'First Aid', 'Medication Level 2'],
+    rateType: 'hourly',
+    rateAmount: 13.50,
   };
   const [staff, setStaff] = useState(initialStaff);
   const [leaveUsedHours, setLeaveUsedHours] = useState(0);
@@ -491,6 +497,14 @@ export default function StaffProfile({ id, showTimesheet = false }: StaffProfile
                   <div>
                     <div className="text-xs text-gray-500 mb-0.5">Bank Reference</div>
                     <div className="text-sm text-gray-900 font-mono">{staff.bankReference}</div>
+                  </div>
+                  <div>
+                    <div className="text-xs text-gray-500 mb-0.5">Rate / Pay</div>
+                    <div className="text-sm text-gray-900 font-medium">
+                      {staff.rateAmount
+                        ? `£${Number(staff.rateAmount).toFixed(2)}${staff.rateType === 'monthly' ? '/month' : '/hour'}`
+                        : 'Not specified'}
+                    </div>
                   </div>
                 </div>
               </div>

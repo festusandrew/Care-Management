@@ -68,6 +68,8 @@ export function AddStaffMemberModal({ isOpen, onClose, onSuccess }: AddStaffMemb
   const [payrollNumber, setPayrollNumber] = useState('');
   const [nextAppraisal, setNextAppraisal] = useState('');
   const [employeeStatus, setEmployeeStatus] = useState('Active');
+  const [rateType, setRateType] = useState<'hourly' | 'monthly'>('hourly');
+  const [rateAmount, setRateAmount] = useState('');
 
   // Compliance
   const [qualifications, setQualifications] = useState([
@@ -90,6 +92,8 @@ export function AddStaffMemberModal({ isOpen, onClose, onSuccess }: AddStaffMemb
   const handleClose = () => {
     setStep('personal');
     setPhotoUrl(null);
+    setRateType('hourly');
+    setRateAmount('');
     onClose();
   };
 
@@ -105,6 +109,8 @@ export function AddStaffMemberModal({ isOpen, onClose, onSuccess }: AddStaffMemb
       avatarUrl: photoUrl || 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=800&auto=format&fit=crop&q=60',
       nextShift: 'TBD',
       qualifications: qualifications.map(q => q.name).filter(Boolean),
+      rateType,
+      rateAmount: rateAmount ? parseFloat(rateAmount) : undefined,
     };
     try {
       const created = await api.addStaffMember(newStaff);
@@ -374,6 +380,15 @@ export function AddStaffMemberModal({ isOpen, onClose, onSuccess }: AddStaffMemb
                   </Field>
                   <Field label="Tax Number (NI Number)">
                     <input type="text" className={INPUT} placeholder="e.g. AB 12 34 56 C" value={payrollNumber} onChange={e => setPayrollNumber(e.target.value)} />
+                  </Field>
+                  <Field label="Rate Type">
+                    <select className={INPUT} value={rateType} onChange={e => setRateType(e.target.value as 'hourly' | 'monthly')}>
+                      <option value="hourly">Hourly Rate (£)</option>
+                      <option value="monthly">Monthly Salary (£)</option>
+                    </select>
+                  </Field>
+                  <Field label="Rate Amount">
+                    <input type="number" step="0.01" className={INPUT} placeholder={rateType === 'hourly' ? "e.g. 13.50" : "e.g. 3000.00"} value={rateAmount} onChange={e => setRateAmount(e.target.value)} />
                   </Field>
                 </div>
               </Section>
