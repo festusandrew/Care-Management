@@ -176,9 +176,20 @@ export default function StaffProfile({ id, showTimesheet = false }: StaffProfile
   const [showAddDocModal, setShowAddDocModal] = useState(false);
   const [selectedDocForView, setSelectedDocForView] = useState<any | null>(null);
   const [selectedDocForRenew, setSelectedDocForRenew] = useState<any | null>(null);
+  const [selectedDocForEdit, setSelectedDocForEdit] = useState<any | null>(null);
 
   // Form states
   const [addDocForm, setAddDocForm] = useState({
+    name: '',
+    type: 'Qualification',
+    issuedDate: '',
+    expiryDate: '',
+    neverExpires: false,
+    fileName: '',
+    fileSize: ''
+  });
+
+  const [editDocForm, setEditDocForm] = useState({
     name: '',
     type: 'Qualification',
     issuedDate: '',
@@ -194,6 +205,81 @@ export default function StaffProfile({ id, showTimesheet = false }: StaffProfile
     fileName: '',
     fileSize: ''
   });
+
+  const toInputDate = (dateStr: string) => {
+    if (!dateStr || dateStr === 'N/A' || dateStr === 'Never') return '';
+    const d = new Date(dateStr);
+    if (isNaN(d.getTime())) return '';
+    return d.toISOString().split('T')[0];
+  };
+
+  const handleEditClick = (doc: any) => {
+    setSelectedDocForEdit(doc);
+    const docType = doc.category || doc.type || 'Qualification';
+    const issuedDate = toInputDate(doc.uploadedDate || doc.issuedDate || doc.updatedDate);
+    const expiryDate = toInputDate(doc.expiryDate);
+    const neverExpires = doc.expiryDate === 'N/A' || doc.expiryDate === 'Never' || !doc.expiryDate;
+
+    setEditDocForm({
+      name: doc.name || '',
+      type: docType,
+      issuedDate: issuedDate,
+      expiryDate: neverExpires ? '' : expiryDate,
+      neverExpires: neverExpires,
+      fileName: doc.fileName || '',
+      fileSize: doc.fileSize || ''
+    });
+  };
+
+  const handleSaveEditedDocument = () => {
+    if (!selectedDocForEdit || !editDocForm.name || !editDocForm.issuedDate || !editDocForm.fileName) return;
+
+    const formattedIssued = new Date(editDocForm.issuedDate).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
+    const formattedExpiry = editDocForm.neverExpires ? 'Never' : new Date(editDocForm.expiryDate).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
+
+    let status = 'valid';
+    if (!editDocForm.neverExpires && editDocForm.expiryDate) {
+      const expDate = new Date(editDocForm.expiryDate);
+      const now = new Date();
+      const diffTime = expDate.getTime() - now.getTime();
+      const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+      if (diffDays < 0) {
+        status = 'expired';
+      } else if (diffDays <= 90) {
+        status = 'expiring';
+      }
+    }
+
+    setDocuments(prev => prev.map(doc => {
+      if (doc.id === selectedDocForEdit.id) {
+        const historyEntry = {
+          action: 'Updated',
+          by: 'Sarah Williams',
+          date: new Date().toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }),
+          detail: `Document details edited. Name: ${editDocForm.name}. Type: ${editDocForm.type}.`
+        };
+        return {
+          ...doc,
+          name: editDocForm.name,
+          category: ['Qualification', 'Training', 'ID & Right to Work'].includes(editDocForm.type) ? editDocForm.type : 'Other',
+          type: editDocForm.type,
+          uploadedDate: editDocForm.issuedDate,
+          issuedDate: formattedIssued,
+          expiryDate: formattedExpiry,
+          status: status,
+          fileName: editDocForm.fileName,
+          fileSize: editDocForm.fileSize || doc.fileSize,
+          updatedBy: 'Sarah Williams',
+          updatedDate: new Date().toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }),
+          history: doc.history ? [historyEntry, ...doc.history] : [historyEntry]
+        };
+      }
+      return doc;
+    }));
+
+    setSelectedDocForEdit(null);
+    triggerToast(`Document "${editDocForm.name}" updated successfully.`);
+  };
 
   const [toastMessage, setToastMessage] = useState<string | null>(null);
   const [compSearch,       setCompSearch]       = useState('');
@@ -916,7 +1002,7 @@ export default function StaffProfile({ id, showTimesheet = false }: StaffProfile
                             {/* Actions */}
                             <div className="flex items-center gap-1 shrink-0 mt-0.5">
                               <button className="p-1 text-blue-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors" title="Download"><Download size={12} /></button>
-                              <button onClick={() => setSelectedDocForView(doc)} className="p-1 text-blue-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors" title="Edit"><Edit size={12} /></button>
+                              <button onClick={() => handleEditClick(doc)} className="p-1 text-blue-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors" title="Edit"><Edit size={12} /></button>
                               <button
                                 onClick={() => {
                                   setSelectedDocForRenew(doc);
@@ -1470,6 +1556,135 @@ export default function StaffProfile({ id, showTimesheet = false }: StaffProfile
         <div className="fixed bottom-6 right-6 z-50 flex items-center gap-2 bg-gray-900 text-white px-4 py-3 rounded-xl shadow-xl text-sm font-medium animate-bounce">
           <CheckCircle size={15} className="text-green-400" />
           {toastMessage}
+        </div>
+      )}
+
+      {selectedDocForEdit && (
+        <div className="fixed inset-0 bg-gray-900/40 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md mx-auto overflow-hidden">
+            <div className="flex items-center gap-3 px-6 py-4 border-b border-gray-100 bg-gray-50/50">
+              <div className="w-9 h-9 bg-blue-100 rounded-xl flex items-center justify-center shrink-0">
+                <Edit size={17} className="text-blue-600" />
+              </div>
+              <div className="flex-1">
+                <h2 className="text-base text-gray-900 font-semibold">Edit Compliance Document</h2>
+                <p className="text-xs text-gray-500">Modify qualification or training certificate details</p>
+              </div>
+              <button onClick={() => setSelectedDocForEdit(null)} className="p-1.5 hover:bg-gray-100 rounded-lg transition-colors">
+                <X size={18} className="text-gray-400" />
+              </button>
+            </div>
+            <div className="px-6 py-5 space-y-4">
+              <div>
+                <label className="block text-xs text-gray-500 mb-1 font-semibold">Document Name *</label>
+                <input
+                  type="text"
+                  placeholder="e.g. Safeguarding Level 3"
+                  className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm outline-none focus:border-blue-400 font-medium"
+                  value={editDocForm.name}
+                  onChange={e => setEditDocForm(f => ({ ...f, name: e.target.value }))}
+                />
+              </div>
+              <div>
+                <label className="block text-xs text-gray-500 mb-1 font-semibold">Document Type</label>
+                <select
+                  className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm outline-none focus:border-blue-400 bg-white"
+                  value={['Qualification', 'Training', 'ID & Right to Work'].includes(editDocForm.type) ? editDocForm.type : 'Other'}
+                  onChange={e => setEditDocForm(f => ({ ...f, type: e.target.value === 'Other' ? '' : e.target.value }))}
+                >
+                  <option value="Qualification">Qualification</option>
+                  <option value="Training">Training</option>
+                  <option value="ID & Right to Work">ID & Right to Work</option>
+                  <option value="Other">Other</option>
+                </select>
+                {!['Qualification', 'Training', 'ID & Right to Work'].includes(editDocForm.type) && (
+                  <input
+                    type="text"
+                    required
+                    placeholder="Specify other document type..."
+                    className="w-full mt-2 px-3 py-2 border border-gray-200 rounded-lg text-sm outline-none focus:border-blue-400"
+                    value={editDocForm.type}
+                    onChange={e => setEditDocForm(f => ({ ...f, type: e.target.value }))}
+                  />
+                )}
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-xs text-gray-500 mb-1 font-semibold">Date Issued *</label>
+                  <input
+                    type="date"
+                    className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm outline-none focus:border-blue-400 font-medium"
+                    value={editDocForm.issuedDate}
+                    onChange={e => setEditDocForm(f => ({ ...f, issuedDate: e.target.value }))}
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs text-gray-500 mb-1 font-semibold">Expiry Date</label>
+                  <input
+                    type="date"
+                    disabled={editDocForm.neverExpires}
+                    className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm outline-none focus:border-blue-400 disabled:bg-gray-50 font-medium"
+                    value={editDocForm.expiryDate}
+                    onChange={e => setEditDocForm(f => ({ ...f, expiryDate: e.target.value }))}
+                  />
+                </div>
+              </div>
+              <div className="flex items-center gap-2">
+                <input
+                  type="checkbox"
+                  id="neverExpiresEdit"
+                  className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                  checked={editDocForm.neverExpires}
+                  onChange={e => setEditDocForm(f => ({ ...f, neverExpires: e.target.checked, expiryDate: e.target.checked ? '' : f.expiryDate }))}
+                />
+                <label htmlFor="neverExpiresEdit" className="text-xs text-gray-600 select-none">This document does not expire</label>
+              </div>
+              <div>
+                <label className="block text-xs text-gray-500 mb-1 font-semibold">Upload Certificate *</label>
+                <div className="flex items-center gap-3">
+                  <label className="flex flex-col items-center justify-center flex-1 h-24 border-2 border-dashed border-gray-200 hover:border-blue-400 rounded-xl cursor-pointer transition-colors p-4 bg-gray-50/50">
+                    <div className="flex flex-col items-center justify-center text-center">
+                      <Plus size={20} className="text-gray-400 mb-1" />
+                      <span className="text-xs text-gray-600 font-semibold text-center truncate max-w-[280px]">{editDocForm.fileName || 'Select certificate file'}</span>
+                      {editDocForm.fileSize && <span className="text-[10px] text-gray-400 mt-0.5">{editDocForm.fileSize}</span>}
+                    </div>
+                    <input
+                      type="file"
+                      className="hidden"
+                      onChange={e => {
+                        const file = e.target.files?.[0];
+                        if (file) {
+                          const sizeStr = file.size > 1024 * 1024 
+                            ? `${(file.size / (1024 * 1024)).toFixed(1)} MB` 
+                            : `${(file.size / 1024).toFixed(0)} KB`;
+                          setEditDocForm(f => ({ ...f, fileName: file.name, fileSize: sizeStr }));
+                        }
+                      }}
+                    />
+                  </label>
+                  {editDocForm.fileName && (
+                    <button 
+                      onClick={() => setEditDocForm(f => ({ ...f, fileName: '', fileSize: '' }))}
+                      className="p-1.5 hover:bg-red-50 hover:text-red-600 rounded-lg text-gray-400 transition-colors border border-gray-150"
+                      title="Clear file"
+                    >
+                      <X size={16} />
+                    </button>
+                  )}
+                </div>
+              </div>
+            </div>
+            <div className="flex justify-end gap-3 px-6 py-4 border-t border-gray-100 bg-gray-50/50">
+              <button onClick={() => setSelectedDocForEdit(null)} className="px-4 py-2 text-sm text-gray-600 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors">Cancel</button>
+              <button
+                onClick={handleSaveEditedDocument}
+                disabled={!editDocForm.name || !editDocForm.issuedDate || (!editDocForm.neverExpires && !editDocForm.expiryDate) || !editDocForm.fileName}
+                className="px-5 py-2 text-sm bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed font-semibold"
+              >
+                Save Changes
+              </button>
+            </div>
+          </div>
         </div>
       )}
 

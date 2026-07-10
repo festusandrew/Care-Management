@@ -1,4 +1,4 @@
-import { X, Shield, Check, AlertTriangle, Save, Users, FileText, Calendar, Activity, AlertCircle, Settings, Eye, Lock, Database } from 'lucide-react';
+import { X, Shield, Check, AlertTriangle, Save, Users, FileText, Calendar, Activity, AlertCircle, Settings, Eye, Lock, Database, UserCog, CalendarRange, UserPlus, MessageSquare, DollarSign, BarChart3 } from 'lucide-react';
 import { useState } from 'react';
 
 interface EditPermissionsModalProps {
@@ -49,24 +49,73 @@ export function EditPermissionsModal({ isOpen, onClose, role, onSave }: EditPerm
     editIncidents: role?.name === 'Admin' || role?.name === 'Care Manager',
     approveIncidents: role?.name === 'Admin' || role?.name === 'Care Manager',
     
+    // Staff Management
+    viewStaff: role?.name === 'Admin' || role?.name === 'Care Manager' || role?.name === 'Senior Support Worker',
+    createStaff: role?.name === 'Admin' || role?.name === 'Care Manager',
+    editStaff: role?.name === 'Admin' || role?.name === 'Care Manager',
+    deleteStaff: role?.name === 'Admin',
+
     // Scheduling
     viewSchedule: role?.name === 'Admin' || role?.name === 'Care Manager' || role?.name === 'Senior Support Worker' || role?.name === 'Support Worker',
     createShifts: role?.name === 'Admin' || role?.name === 'Care Manager',
     editShifts: role?.name === 'Admin' || role?.name === 'Care Manager',
-    assignStaff: role?.name === 'Admin' || role?.name === 'Care Manager',
-    
+    deleteShifts: role?.name === 'Admin' || role?.name === 'Care Manager',
+
+    // Leave Requests
+    viewLeaveRequests: role?.name === 'Admin' || role?.name === 'Care Manager' || role?.name === 'Senior Support Worker' || role?.name === 'Support Worker',
+    createLeaveRequests: role?.name === 'Admin' || role?.name === 'Care Manager' || role?.name === 'Senior Support Worker' || role?.name === 'Support Worker',
+    editLeaveRequests: role?.name === 'Admin' || role?.name === 'Care Manager' || role?.name === 'Senior Support Worker',
+    deleteLeaveRequests: role?.name === 'Admin' || role?.name === 'Care Manager',
+
+    // Recruitment
+    viewRecruitment: role?.name === 'Admin' || role?.name === 'Care Manager' || role?.name === 'Senior Support Worker',
+    createRecruitment: role?.name === 'Admin' || role?.name === 'Care Manager',
+    editRecruitment: role?.name === 'Admin' || role?.name === 'Care Manager',
+    deleteRecruitment: role?.name === 'Admin',
+
+    // Communication
+    viewCommunication: role?.name === 'Admin' || role?.name === 'Care Manager' || role?.name === 'Senior Support Worker' || role?.name === 'Support Worker',
+    createCommunication: role?.name === 'Admin' || role?.name === 'Care Manager' || role?.name === 'Senior Support Worker' || role?.name === 'Support Worker',
+    editCommunication: role?.name === 'Admin' || role?.name === 'Care Manager',
+    deleteCommunication: role?.name === 'Admin' || role?.name === 'Care Manager',
+
+    // Financial
+    viewFinancial: role?.name === 'Admin' || role?.name === 'Care Manager',
+    createFinancial: role?.name === 'Admin',
+    editFinancial: role?.name === 'Admin',
+    deleteFinancial: role?.name === 'Admin',
+
+    // Analytics
+    viewAnalytics: role?.name === 'Admin' || role?.name === 'Care Manager' || role?.name === 'Senior Support Worker',
+    createAnalytics: role?.name === 'Admin' || role?.name === 'Care Manager',
+    editAnalytics: role?.name === 'Admin' || role?.name === 'Care Manager',
+    deleteAnalytics: role?.name === 'Admin',
+
     // Compliance
     viewCompliance: role?.name === 'Admin' || role?.name === 'Care Manager' || role?.name === 'Senior Support Worker',
+    createCompliance: role?.name === 'Admin' || role?.name === 'Care Manager',
     editCompliance: role?.name === 'Admin' || role?.name === 'Care Manager',
-    viewAuditLogs: role?.name === 'Admin' || role?.name === 'Care Manager',
-    exportReports: role?.name === 'Admin' || role?.name === 'Care Manager',
+    deleteCompliance: role?.name === 'Admin',
     
-    // User Management
-    viewUsers: role?.name === 'Admin',
-    createUsers: role?.name === 'Admin',
-    editUsers: role?.name === 'Admin',
-    deactivateUsers: role?.name === 'Admin',
-    managePermissions: role?.name === 'Admin',
+    // User Management (API Endpoints)
+    apiGetDashboardAlerts: role?.name === 'Admin' || role?.name === 'Care Manager' || role?.name === 'Senior Support Worker' || role?.name === 'Support Worker',
+    apiGetServiceUsers: role?.name === 'Admin' || role?.name === 'Care Manager' || role?.name === 'Senior Support Worker' || role?.name === 'Support Worker',
+    apiGetServiceUserById: role?.name === 'Admin' || role?.name === 'Care Manager' || role?.name === 'Senior Support Worker' || role?.name === 'Support Worker',
+    apiAddServiceUser: role?.name === 'Admin' || role?.name === 'Care Manager',
+    apiGetStaffMembers: role?.name === 'Admin' || role?.name === 'Care Manager' || role?.name === 'Senior Support Worker',
+    apiAddStaffMember: role?.name === 'Admin' || role?.name === 'Care Manager',
+    apiGetClockEvents: role?.name === 'Admin' || role?.name === 'Care Manager' || role?.name === 'Senior Support Worker' || role?.name === 'Support Worker',
+    apiClockOutStaff: role?.name === 'Admin' || role?.name === 'Care Manager' || role?.name === 'Senior Support Worker',
+    apiClockInStaff: role?.name === 'Admin' || role?.name === 'Care Manager' || role?.name === 'Senior Support Worker',
+    apiGetLeaveRequests: role?.name === 'Admin' || role?.name === 'Care Manager' || role?.name === 'Senior Support Worker' || role?.name === 'Support Worker',
+    apiUpdateLeaveRequestStatus: role?.name === 'Admin' || role?.name === 'Care Manager',
+    apiLogLeaveRequest: role?.name === 'Admin' || role?.name === 'Care Manager' || role?.name === 'Senior Support Worker' || role?.name === 'Support Worker',
+    apiGetAttendanceHistory: role?.name === 'Admin' || role?.name === 'Care Manager' || role?.name === 'Senior Support Worker',
+    apiGetMedications: role?.name === 'Admin' || role?.name === 'Care Manager' || role?.name === 'Senior Support Worker' || role?.name === 'Support Worker',
+    apiAddMedications: role?.name === 'Admin' || role?.name === 'Care Manager',
+    apiAdministerMedication: role?.name === 'Admin' || role?.name === 'Care Manager' || role?.name === 'Senior Support Worker',
+    apiUpdateMedicationStatus: role?.name === 'Admin' || role?.name === 'Care Manager' || role?.name === 'Senior Support Worker',
+    apiUpdateMedicationSchedule: role?.name === 'Admin' || role?.name === 'Care Manager',
     
     // System Settings
     viewSettings: role?.name === 'Admin' || role?.name === 'Care Manager',
@@ -163,14 +212,80 @@ export function EditPermissionsModal({ isOpen, onClose, role, onSave }: EditPerm
       ]
     },
     {
+      name: 'Staff Management',
+      icon: UserCog,
+      color: 'bg-teal-100 text-teal-600',
+      permissions: [
+        { key: 'viewStaff', label: 'View' },
+        { key: 'createStaff', label: 'Create' },
+        { key: 'editStaff', label: 'Edit' },
+        { key: 'deleteStaff', label: 'Delete' }
+      ]
+    },
+    {
       name: 'Scheduling',
       icon: Calendar,
       color: 'bg-cyan-100 text-cyan-600',
       permissions: [
         { key: 'viewSchedule', label: 'View' },
-        { key: 'createShifts', label: 'Create Shifts' },
-        { key: 'editShifts', label: 'Edit Shifts' },
-        { key: 'assignStaff', label: 'Assign Staff' }
+        { key: 'createShifts', label: 'Create' },
+        { key: 'editShifts', label: 'Edit' },
+        { key: 'deleteShifts', label: 'Delete' }
+      ]
+    },
+    {
+      name: 'Leave Requests',
+      icon: CalendarRange,
+      color: 'bg-sky-100 text-sky-600',
+      permissions: [
+        { key: 'viewLeaveRequests', label: 'View' },
+        { key: 'createLeaveRequests', label: 'Create' },
+        { key: 'editLeaveRequests', label: 'Edit' },
+        { key: 'deleteLeaveRequests', label: 'Delete' }
+      ]
+    },
+    {
+      name: 'Recruitment',
+      icon: UserPlus,
+      color: 'bg-emerald-100 text-emerald-600',
+      permissions: [
+        { key: 'viewRecruitment', label: 'View' },
+        { key: 'createRecruitment', label: 'Create' },
+        { key: 'editRecruitment', label: 'Edit' },
+        { key: 'deleteRecruitment', label: 'Delete' }
+      ]
+    },
+    {
+      name: 'Communication',
+      icon: MessageSquare,
+      color: 'bg-indigo-100 text-indigo-600',
+      permissions: [
+        { key: 'viewCommunication', label: 'View' },
+        { key: 'createCommunication', label: 'Create' },
+        { key: 'editCommunication', label: 'Edit' },
+        { key: 'deleteCommunication', label: 'Delete' }
+      ]
+    },
+    {
+      name: 'Financial',
+      icon: DollarSign,
+      color: 'bg-amber-100 text-amber-600',
+      permissions: [
+        { key: 'viewFinancial', label: 'View' },
+        { key: 'createFinancial', label: 'Create' },
+        { key: 'editFinancial', label: 'Edit' },
+        { key: 'deleteFinancial', label: 'Delete' }
+      ]
+    },
+    {
+      name: 'Analytics',
+      icon: BarChart3,
+      color: 'bg-purple-100 text-purple-600',
+      permissions: [
+        { key: 'viewAnalytics', label: 'View' },
+        { key: 'createAnalytics', label: 'Create' },
+        { key: 'editAnalytics', label: 'Edit' },
+        { key: 'deleteAnalytics', label: 'Delete' }
       ]
     },
     {
@@ -179,9 +294,9 @@ export function EditPermissionsModal({ isOpen, onClose, role, onSave }: EditPerm
       color: 'bg-green-100 text-green-600',
       permissions: [
         { key: 'viewCompliance', label: 'View' },
+        { key: 'createCompliance', label: 'Create' },
         { key: 'editCompliance', label: 'Edit' },
-        { key: 'viewAuditLogs', label: 'Audit Logs' },
-        { key: 'exportReports', label: 'Export' }
+        { key: 'deleteCompliance', label: 'Delete' }
       ]
     },
     {
@@ -189,11 +304,24 @@ export function EditPermissionsModal({ isOpen, onClose, role, onSave }: EditPerm
       icon: Users,
       color: 'bg-violet-100 text-violet-600',
       permissions: [
-        { key: 'viewUsers', label: 'View' },
-        { key: 'createUsers', label: 'Create' },
-        { key: 'editUsers', label: 'Edit' },
-        { key: 'deactivateUsers', label: 'Deactivate' },
-        { key: 'managePermissions', label: 'Permissions' }
+        { key: 'apiGetDashboardAlerts', label: 'GET /dashboard/alerts' },
+        { key: 'apiGetServiceUsers', label: 'GET /service-users' },
+        { key: 'apiGetServiceUserById', label: 'GET /service-users/:id' },
+        { key: 'apiAddServiceUser', label: 'POST /service-users' },
+        { key: 'apiGetStaffMembers', label: 'GET /staff' },
+        { key: 'apiAddStaffMember', label: 'POST /staff' },
+        { key: 'apiGetClockEvents', label: 'GET /attendance/clock-events' },
+        { key: 'apiClockOutStaff', label: 'POST /attendance/clock-out/:staffId' },
+        { key: 'apiClockInStaff', label: 'POST /attendance/clock-in/:staffId' },
+        { key: 'apiGetLeaveRequests', label: 'GET /leave-requests' },
+        { key: 'apiUpdateLeaveRequestStatus', label: 'PUT /leave-requests/:id/status' },
+        { key: 'apiLogLeaveRequest', label: 'POST /leave-requests' },
+        { key: 'apiGetAttendanceHistory', label: 'GET /attendance/history' },
+        { key: 'apiGetMedications', label: 'GET /medications' },
+        { key: 'apiAddMedications', label: 'POST /medications' },
+        { key: 'apiAdministerMedication', label: 'POST /medications/:id/administer' },
+        { key: 'apiUpdateMedicationStatus', label: 'PUT /medications/:id/status' },
+        { key: 'apiUpdateMedicationSchedule', label: 'PUT /medications/:id/schedule' }
       ]
     },
     {
