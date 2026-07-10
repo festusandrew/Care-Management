@@ -264,10 +264,24 @@ export function ServiceUserProfile({ userId, onBack }: ServiceUserProfileProps) 
     setShowAddRisk(false);
   };
 
-  const medications = [
+  const [medications, setMedications] = useState([
     { id: 1, name: 'Sertraline', dosage: '50mg', frequency: 'Once daily (morning)', prescribedBy: 'Dr. Emily Carter', startDate: '15 Jan 2024', notes: 'For anxiety management', status: 'active' },
     { id: 2, name: 'Melatonin', dosage: '3mg', frequency: 'Once daily (evening)', prescribedBy: 'Dr. Emily Carter', startDate: '20 Feb 2024', notes: 'Sleep aid', status: 'active' },
-  ];
+  ]);
+
+  const handleSaveMedications = (entries: any[]) => {
+    const newMeds = entries.map(entry => ({
+      id: Date.now() + Math.random(),
+      name: entry.name,
+      dosage: entry.dosage,
+      frequency: entry.frequency,
+      prescribedBy: entry.prescribedBy || 'Dr. Emily Carter',
+      startDate: entry.startDate ? new Date(entry.startDate).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }) : new Date().toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }),
+      notes: entry.notes || entry.specialInstructions || '',
+      status: 'active',
+    }));
+    setMedications(prev => [...prev, ...newMeds]);
+  };
 
   const recentLogs = [
     { id: 1, date: '24 Feb 2026', time: '14:30', type: 'Daily Log', mood: 'happy', behavior: 'Cooperative', notes: 'Participated well in group therapy. Showed improvement in social interactions.', staff: 'Mary Thompson' },
@@ -319,13 +333,42 @@ export function ServiceUserProfile({ userId, onBack }: ServiceUserProfileProps) 
   const totalAptPages = Math.max(1, Math.ceil(upcomingAppointments.length / APT_PER_PAGE));
   const pagedApts     = upcomingAppointments.slice((aptPage - 1) * APT_PER_PAGE, aptPage * APT_PER_PAGE);
 
-  const recentIncidents = [
+  const [recentIncidents, setRecentIncidents] = useState([
     { id: 1, date: '18 Feb 2026', time: '19:45', severity: 'amber' as const, type: 'Anxiety Episode', description: 'Experienced anxiety attack during evening routine. Staff provided support and calming techniques.', actionTaken: 'One-on-one support provided. Care manager notified.', staff: 'John Davies', reference: 'INC-2026-042' },
     { id: 2, date: '10 Feb 2026', time: '15:20', severity: 'green' as const, type: 'Minor Conflict', description: 'Brief disagreement with peer during group activity.', actionTaken: 'Mediation provided. Issue resolved amicably.', staff: 'Mary Thompson', reference: 'INC-2026-038' },
-  ];
+  ]);
 
+  const handleReportIncidentConfirm = (data: any) => {
+    const fmt = (d: string) => new Date(d).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
+    const newIncident = {
+      id: Date.now(),
+      date: data.date ? fmt(data.date) : new Date().toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }),
+      time: data.time || new Date().toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' }),
+      severity: data.severity || 'low',
+      type: data.type || 'Other',
+      description: data.description || '',
+      actionTaken: data.actionTaken || '',
+      staff: data.reportedBy || 'Staff Member',
+      reference: `INC-2026-${Math.floor(100 + Math.random() * 900)}`
+    };
+    setRecentIncidents(prev => [newIncident, ...prev]);
+  };
 
-  // Treatment history
+  const handleScheduleAppointmentConfirm = (data: any) => {
+    const fmt = (d: string) => new Date(d).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
+    const colors = ['blue', 'purple', 'emerald', 'amber', 'rose'];
+    const randomColor = colors[Math.floor(Math.random() * colors.length)];
+    const newApt = {
+      id: Date.now(),
+      type: data.type || 'Other',
+      date: data.date ? fmt(data.date) : new Date().toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }),
+      time: data.time || '10:00',
+      with: data.withPerson || 'Staff Member',
+      location: data.location || 'Medical Room',
+      color: randomColor
+    };
+    setUpcomingAppointments(prev => [newApt, ...prev]);
+  };
   const [hospitalHistory, setHospitalHistory] = useState([
     { id: 1, hospital: 'Bristol Royal Infirmary', reason: 'Anxiety crisis — assessment and stabilisation', date: '14 Aug 2024', treatedBy: 'Dr. Priya Sharma, Consultant Psychiatrist' },
     { id: 2, hospital: 'Southmead Hospital', reason: 'Fracture of right wrist (sports injury)', date: '3 Mar 2023', treatedBy: 'Dr. Tom Ellis, Orthopaedic Surgeon' },
@@ -1655,9 +1698,9 @@ export function ServiceUserProfile({ userId, onBack }: ServiceUserProfileProps) 
       {/* Modals */}
       <QuickLogModal isOpen={showQuickLog} onClose={() => setShowQuickLog(false)} userName={user.name} userId={user.id} />
       <EditServiceUserModal isOpen={showEditProfile} onClose={() => setShowEditProfile(false)} user={user} />
-      <ScheduleAppointmentModal isOpen={showScheduleAppointment} onClose={() => setShowScheduleAppointment(false)} userName={user.name} />
-      <AddMedicationModal isOpen={showAddMedication} onClose={() => setShowAddMedication(false)} userName={user.name} />
-      <ReportIncidentModal isOpen={showReportIncident} onClose={() => setShowReportIncident(false)} userName={user.name} />
+      <ScheduleAppointmentModal isOpen={showScheduleAppointment} onClose={() => setShowScheduleAppointment(false)} userName={user.name} onConfirm={handleScheduleAppointmentConfirm} />
+      <AddMedicationModal isOpen={showAddMedication} onClose={() => setShowAddMedication(false)} userName={user.name} onConfirm={handleSaveMedications} />
+      <ReportIncidentModal isOpen={showReportIncident} onClose={() => setShowReportIncident(false)} userName={user.name} onConfirm={handleReportIncidentConfirm} />
 
       {/* ── Add Note Modal ── */}
       {showAddNote && (
@@ -2464,17 +2507,27 @@ export function ServiceUserProfile({ userId, onBack }: ServiceUserProfileProps) 
                     <label className="block text-xs text-gray-500 mb-1">Purpose of Visit</label>
                     <select
                       className="w-full px-3 py-2.5 border border-gray-200 rounded-xl text-sm outline-none focus:border-purple-400 focus:ring-2 focus:ring-purple-50 bg-white transition-all"
-                      value={visitForm.purpose}
-                      onChange={e => setVisitForm(f => ({ ...f, purpose: e.target.value }))}
+                      value={(!visitForm.purpose || ['Family visit', 'Support visit', 'Birthday / celebration', 'Medical escort', 'Legal / advocacy'].includes(visitForm.purpose)) ? visitForm.purpose : 'Other'}
+                      onChange={e => setVisitForm(f => ({ ...f, purpose: e.target.value === 'Other' ? '' : e.target.value }))}
                     >
                       <option value="">Select purpose...</option>
-                      <option>Family visit</option>
-                      <option>Support visit</option>
-                      <option>Birthday / celebration</option>
-                      <option>Medical escort</option>
-                      <option>Legal / advocacy</option>
-                      <option>Other</option>
+                      <option value="Family visit">Family visit</option>
+                      <option value="Support visit">Support visit</option>
+                      <option value="Birthday / celebration">Birthday / celebration</option>
+                      <option value="Medical escort">Medical escort</option>
+                      <option value="Legal / advocacy">Legal / advocacy</option>
+                      <option value="Other">Other</option>
                     </select>
+                    {visitForm.purpose !== undefined && visitForm.purpose !== '' && !['Family visit', 'Support visit', 'Birthday / celebration', 'Medical escort', 'Legal / advocacy'].includes(visitForm.purpose) && (
+                      <input
+                        type="text"
+                        required
+                        placeholder="Specify other purpose..."
+                        className="w-full mt-2 px-3 py-2.5 border border-gray-200 rounded-xl text-sm outline-none focus:border-purple-400 focus:ring-2 focus:ring-purple-50 transition-all"
+                        value={visitForm.purpose}
+                        onChange={e => setVisitForm(f => ({ ...f, purpose: e.target.value }))}
+                      />
+                    )}
                   </div>
                 </div>
               </div>

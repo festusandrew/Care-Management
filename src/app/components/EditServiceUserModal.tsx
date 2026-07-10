@@ -84,8 +84,8 @@ export function EditServiceUserModal({ isOpen, onClose, user }: EditServiceUserM
               <label className="block text-sm text-gray-700 mb-2">Gender *</label>
               <select
                 name="gender"
-                value={formData.gender}
-                onChange={handleChange}
+                value={['male', 'female', 'prefer-not-to-say'].includes(formData.gender) ? formData.gender : 'other'}
+                onChange={e => setFormData(f => ({ ...f, gender: e.target.value === 'other' ? '' : e.target.value }))}
                 required
                 className="w-full px-4 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:border-blue-500"
               >
@@ -94,6 +94,16 @@ export function EditServiceUserModal({ isOpen, onClose, user }: EditServiceUserM
                 <option value="other">Other</option>
                 <option value="prefer-not-to-say">Prefer not to say</option>
               </select>
+              {!['male', 'female', 'prefer-not-to-say'].includes(formData.gender) && (
+                <input
+                  type="text"
+                  required
+                  placeholder="Specify other gender..."
+                  className="w-full mt-2 px-4 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:border-blue-500"
+                  value={formData.gender}
+                  onChange={e => setFormData(f => ({ ...f, gender: e.target.value }))}
+                />
+              )}
             </div>
           </div>
         </div>

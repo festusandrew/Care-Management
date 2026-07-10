@@ -185,11 +185,15 @@ export default function Medications() {
     }
   };
 
-  const handleSaveMedications = async (entries: any[]) => {
+  const handleSaveMedications = async (entries: any[], selectedUserId?: number) => {
     try {
-      const targetUser = (selectedUser && selectedUser.id !== 0)
-        ? selectedUser
-        : (serviceUsersList[0] || { id: 1, name: 'Sarah Johnson', photo: '👧' });
+      let targetUser = selectedUser;
+      if (!targetUser && selectedUserId) {
+        targetUser = serviceUsersList.find(u => u.id === selectedUserId) || null;
+      }
+      if (!targetUser) {
+        targetUser = serviceUsersList[0] || { id: 1, name: 'Sarah Johnson', photo: '👧' };
+      }
 
       const newMeds = entries.map(entry => {
         let time = '08:00';
@@ -585,14 +589,15 @@ export default function Medications() {
       </main>
 
       {/* Modals */}
-      {selectedUser && (
+      {showAddMedication && (
         <AddMedicationModal
           isOpen={showAddMedication}
           onClose={() => {
             setShowAddMedication(false);
             setSelectedUser(null);
           }}
-          userName={selectedUser.name}
+          userName={selectedUser?.name}
+          serviceUsersList={serviceUsersList}
           onConfirm={handleSaveMedications}
         />
       )}

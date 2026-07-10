@@ -57,8 +57,8 @@ export function AddCertificateModal({ isOpen, onClose }: AddCertificateModalProp
                 <label className="block text-sm text-gray-700 mb-1.5">Certificate Type *</label>
                 <select
                   required
-                  value={formData.certificateType}
-                  onChange={(e) => setFormData({ ...formData, certificateType: e.target.value })}
+                  value={(!formData.certificateType || ['DBS Check', 'Professional Registration', 'Food Hygiene Certificate', 'Driving License', 'First Aid Certificate', 'NVQ/Diploma'].includes(formData.certificateType)) ? formData.certificateType : 'Other'}
+                  onChange={(e) => setFormData({ ...formData, certificateType: e.target.value === 'Other' ? '' : e.target.value })}
                   className="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-sm focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
                 >
                   <option value="">Select type</option>
@@ -70,6 +70,16 @@ export function AddCertificateModal({ isOpen, onClose }: AddCertificateModalProp
                   <option value="NVQ/Diploma">NVQ/Diploma</option>
                   <option value="Other">Other</option>
                 </select>
+                {formData.certificateType !== undefined && formData.certificateType !== '' && !['DBS Check', 'Professional Registration', 'Food Hygiene Certificate', 'Driving License', 'First Aid Certificate', 'NVQ/Diploma'].includes(formData.certificateType) && (
+                  <input
+                    type="text"
+                    required
+                    placeholder="Specify other certificate type..."
+                    className="w-full mt-2 px-3 py-2.5 border border-gray-200 rounded-lg text-sm focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
+                    value={formData.certificateType}
+                    onChange={(e) => setFormData({ ...formData, certificateType: e.target.value })}
+                  />
+                )}
               </div>
               <div>
                 <label className="block text-sm text-gray-700 mb-1.5">Staff Member *</label>

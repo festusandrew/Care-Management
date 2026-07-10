@@ -346,28 +346,38 @@ export function AddServiceUserModal({ isOpen, onClose, onSuccess }: AddServiceUs
                     </select>
                   </Field>
                   <Field label="Nationality">
-                    <select className={INPUT} value={nationality} onChange={e => setNationality(e.target.value)}>
+                    <select className={INPUT} value={(!nationality || ['British', 'Irish', 'English', 'Scottish', 'Welsh', 'American', 'Canadian', 'Australian', 'French', 'German', 'Spanish', 'Italian', 'Polish', 'Indian', 'Pakistani', 'Chinese', 'Nigerian', 'Jamaican'].includes(nationality)) ? nationality : 'Other'} onChange={e => setNationality(e.target.value === 'Other' ? '' : e.target.value)}>
                       <option value="">Select nationality...</option>
-                      <option>British</option>
-                      <option>Irish</option>
-                      <option>English</option>
-                      <option>Scottish</option>
-                      <option>Welsh</option>
-                      <option>American</option>
-                      <option>Canadian</option>
-                      <option>Australian</option>
-                      <option>French</option>
-                      <option>German</option>
-                      <option>Spanish</option>
-                      <option>Italian</option>
-                      <option>Polish</option>
-                      <option>Indian</option>
-                      <option>Pakistani</option>
-                      <option>Chinese</option>
-                      <option>Nigerian</option>
-                      <option>Jamaican</option>
-                      <option>Other</option>
+                      <option value="British">British</option>
+                      <option value="Irish">Irish</option>
+                      <option value="English">English</option>
+                      <option value="Scottish">Scottish</option>
+                      <option value="Welsh">Welsh</option>
+                      <option value="American">American</option>
+                      <option value="Canadian">Canadian</option>
+                      <option value="Australian">Australian</option>
+                      <option value="French">French</option>
+                      <option value="German">German</option>
+                      <option value="Spanish">Spanish</option>
+                      <option value="Italian">Italian</option>
+                      <option value="Polish">Polish</option>
+                      <option value="Indian">Indian</option>
+                      <option value="Pakistani">Pakistani</option>
+                      <option value="Chinese">Chinese</option>
+                      <option value="Nigerian">Nigerian</option>
+                      <option value="Jamaican">Jamaican</option>
+                      <option value="Other">Other</option>
                     </select>
+                    {nationality !== undefined && nationality !== '' && !['British', 'Irish', 'English', 'Scottish', 'Welsh', 'American', 'Canadian', 'Australian', 'French', 'German', 'Spanish', 'Italian', 'Polish', 'Indian', 'Pakistani', 'Chinese', 'Nigerian', 'Jamaican'].includes(nationality) && (
+                      <input
+                        type="text"
+                        required
+                        placeholder="Specify other nationality..."
+                        className="w-full mt-2 px-3 py-2 border border-gray-200 rounded-lg text-sm outline-none focus:border-blue-400"
+                        value={nationality}
+                        onChange={e => setNationality(e.target.value)}
+                      />
+                    )}
                   </Field>
                   <Field label="NHS Number">
                     <input type="text" className={INPUT} placeholder="000 000 0000" value={nhsNumber} onChange={e => setNhsNumber(e.target.value)} />

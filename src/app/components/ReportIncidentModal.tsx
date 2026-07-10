@@ -4,14 +4,16 @@ import { useState } from 'react';
 interface ReportIncidentModalProps {
   isOpen: boolean;
   onClose: () => void;
+  userName?: string;
+  onConfirm?: (data: any) => void;
 }
 
-export function ReportIncidentModal({ isOpen, onClose }: ReportIncidentModalProps) {
+export function ReportIncidentModal({ isOpen, onClose, userName, onConfirm }: ReportIncidentModalProps) {
   const [formData, setFormData] = useState({
     title: '',
     type: '',
     severity: '',
-    serviceUser: '',
+    serviceUser: userName || '',
     date: '',
     time: '',
     location: '',
@@ -30,6 +32,9 @@ export function ReportIncidentModal({ isOpen, onClose }: ReportIncidentModalProp
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     console.log('Incident reported:', formData);
+    if (onConfirm) {
+      onConfirm(formData);
+    }
     onClose();
   };
 
@@ -79,8 +84,8 @@ export function ReportIncidentModal({ isOpen, onClose }: ReportIncidentModalProp
                   </label>
                   <select
                     required
-                    value={formData.type}
-                    onChange={(e) => setFormData({ ...formData, type: e.target.value })}
+                    value={(!formData.type || ['Behavioral', 'Medication', 'Accident/Injury', 'Safeguarding', 'Property Damage', 'Medical'].includes(formData.type)) ? formData.type : 'Other'}
+                    onChange={(e) => setFormData({ ...formData, type: e.target.value === 'Other' ? '' : e.target.value })}
                     className="w-full px-4 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:border-blue-500"
                   >
                     <option value="">Select type</option>
@@ -92,6 +97,16 @@ export function ReportIncidentModal({ isOpen, onClose }: ReportIncidentModalProp
                     <option value="Medical">Medical Emergency</option>
                     <option value="Other">Other</option>
                   </select>
+                  {formData.type !== undefined && formData.type !== '' && !['Behavioral', 'Medication', 'Accident/Injury', 'Safeguarding', 'Property Damage', 'Medical'].includes(formData.type) && (
+                    <input
+                      type="text"
+                      required
+                      placeholder="Specify other incident type..."
+                      className="w-full mt-2 px-4 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:border-blue-500"
+                      value={formData.type}
+                      onChange={(e) => setFormData({ ...formData, type: e.target.value })}
+                    />
+                  )}
                 </div>
 
                 {/* Severity */}

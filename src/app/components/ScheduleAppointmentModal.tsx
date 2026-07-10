@@ -5,9 +5,10 @@ interface ScheduleAppointmentModalProps {
   isOpen: boolean;
   onClose: () => void;
   userName: string;
+  onConfirm?: (data: any) => void;
 }
 
-export function ScheduleAppointmentModal({ isOpen, onClose, userName }: ScheduleAppointmentModalProps) {
+export function ScheduleAppointmentModal({ isOpen, onClose, userName, onConfirm }: ScheduleAppointmentModalProps) {
   const [formData, setFormData] = useState({
     type: '',
     date: '',
@@ -23,7 +24,9 @@ export function ScheduleAppointmentModal({ isOpen, onClose, userName }: Schedule
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     console.log('Appointment scheduled:', formData);
-    // Handle form submission
+    if (onConfirm) {
+      onConfirm(formData);
+    }
     onClose();
   };
 
@@ -43,8 +46,8 @@ export function ScheduleAppointmentModal({ isOpen, onClose, userName }: Schedule
           <label className="block text-sm text-gray-700 mb-2">Appointment Type *</label>
           <select
             name="type"
-            value={formData.type}
-            onChange={handleChange}
+            value={(!formData.type || ['psychiatric', 'therapy', 'educational', 'medical', 'family', 'social'].includes(formData.type)) ? formData.type : 'other'}
+            onChange={e => setFormData(f => ({ ...f, type: e.target.value === 'other' ? '' : e.target.value }))}
             required
             className="w-full px-4 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:border-blue-500"
           >
@@ -57,6 +60,16 @@ export function ScheduleAppointmentModal({ isOpen, onClose, userName }: Schedule
             <option value="social">Social Worker Visit</option>
             <option value="other">Other</option>
           </select>
+          {formData.type !== undefined && formData.type !== '' && !['psychiatric', 'therapy', 'educational', 'medical', 'family', 'social'].includes(formData.type) && (
+            <input
+              type="text"
+              required
+              placeholder="Specify other appointment type..."
+              className="w-full mt-2 px-4 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:border-blue-500"
+              value={formData.type}
+              onChange={e => setFormData(f => ({ ...f, type: e.target.value }))}
+            />
+          )}
         </div>
 
         {/* Date & Time */}

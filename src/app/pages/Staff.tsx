@@ -1148,19 +1148,29 @@ export default function Staff() {
                   <label className="block text-xs text-gray-500 mb-1">Leave Type *</label>
                   <select
                     className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm outline-none focus:border-blue-400 bg-white"
-                    value={logLeaveForm.type}
-                    onChange={e => setLogLeaveForm(f => ({ ...f, type: e.target.value }))}
+                    value={['Annual Leave', 'TOIL (Time Off In Lieu)', 'Medical Leave', 'Emergency Leave', 'Study Leave', 'Maternity / Paternity Leave', 'Compassionate Leave', 'Unpaid Leave'].includes(logLeaveForm.type) ? logLeaveForm.type : 'Other'}
+                    onChange={e => setLogLeaveForm(f => ({ ...f, type: e.target.value === 'Other' ? '' : e.target.value }))}
                   >
-                    <option>Annual Leave</option>
-                    <option>TOIL (Time Off In Lieu)</option>
-                    <option>Medical Leave</option>
-                    <option>Emergency Leave</option>
-                    <option>Study Leave</option>
-                    <option>Maternity / Paternity Leave</option>
-                    <option>Compassionate Leave</option>
-                    <option>Unpaid Leave</option>
-                    <option>Other</option>
+                    <option value="Annual Leave">Annual Leave</option>
+                    <option value="TOIL (Time Off In Lieu)">TOIL (Time Off In Lieu)</option>
+                    <option value="Medical Leave">Medical Leave</option>
+                    <option value="Emergency Leave">Emergency Leave</option>
+                    <option value="Study Leave">Study Leave</option>
+                    <option value="Maternity / Paternity Leave">Maternity / Paternity Leave</option>
+                    <option value="Compassionate Leave">Compassionate Leave</option>
+                    <option value="Unpaid Leave">Unpaid Leave</option>
+                    <option value="Other">Other</option>
                   </select>
+                  {!['Annual Leave', 'TOIL (Time Off In Lieu)', 'Medical Leave', 'Emergency Leave', 'Study Leave', 'Maternity / Paternity Leave', 'Compassionate Leave', 'Unpaid Leave'].includes(logLeaveForm.type) && (
+                    <input
+                      type="text"
+                      required
+                      placeholder="Specify other leave type..."
+                      className="w-full mt-2 px-3 py-2 border border-gray-200 rounded-lg text-sm outline-none focus:border-blue-400"
+                      value={logLeaveForm.type}
+                      onChange={e => setLogLeaveForm(f => ({ ...f, type: e.target.value }))}
+                    />
+                  )}
                 </div>
 
                 {/* Status */}

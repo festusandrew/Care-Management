@@ -4,8 +4,9 @@ import { X, Plus, Trash2, Pill, Save, AlertCircle } from 'lucide-react';
 interface AddMedicationModalProps {
   isOpen: boolean;
   onClose: () => void;
-  userName: string;
-  onConfirm?: (entries: MedEntry[]) => void;
+  userName?: string;
+  serviceUsersList?: any[];
+  onConfirm?: (entries: MedEntry[], selectedUserId?: number) => void;
 }
 
 type MedEntry = {
@@ -19,6 +20,7 @@ type MedEntry = {
   prescriptionDate: string;
   startDate: string;
   expiryDate: string;
+  neverExpires: boolean;
   endDate: string;
   pharmacyName: string;
   sideEffects: string;
@@ -30,7 +32,7 @@ const blank = (): MedEntry => ({
   id: Date.now() + Math.random(),
   name: '', dosage: '', frequency: '', route: '',
   prescribedBy: '', prescriptionNumber: '',
-  prescriptionDate: '', startDate: '', expiryDate: '', endDate: '',
+  prescriptionDate: '', startDate: '', expiryDate: '', neverExpires: false, endDate: '',
   pharmacyName: '', sideEffects: '', specialInstructions: '', notes: '',
 });
 
@@ -50,7 +52,6 @@ function MedCard({
 
   return (
     <div className="border border-gray-200 rounded-2xl overflow-hidden">
-      {/* Card header */}
       <div className="flex items-center justify-between px-5 py-3 bg-blue-50 border-b border-blue-100">
         <div className="flex items-center gap-2">
           <div className="w-7 h-7 bg-blue-600 text-white rounded-lg flex items-center justify-center text-xs shrink-0">
@@ -72,7 +73,6 @@ function MedCard({
       </div>
 
       <div className="p-5 space-y-5 bg-white">
-        {/* Medication Details */}
         <div>
           <p className="text-xs text-gray-400 uppercase tracking-wide mb-3">Medication Details</p>
           <div className="grid grid-cols-2 gap-3">
@@ -84,36 +84,63 @@ function MedCard({
               <label className={LABEL}>Dosage *</label>
               <input type="text" className={INPUT} placeholder="e.g. 50mg" value={entry.dosage} onChange={set('dosage')} />
             </div>
-            <div>
+            <div className="col-span-2 sm:col-span-1">
               <label className={LABEL}>Frequency *</label>
-              <select className={INPUT} value={entry.frequency} onChange={set('frequency')}>
+              <select
+                className={INPUT}
+                value={(!entry.frequency || ['Once daily (morning)', 'Once daily (evening)', 'Twice daily', 'Three times daily', 'Four times daily', 'As needed (PRN)', 'Weekly'].includes(entry.frequency)) ? entry.frequency : 'Other'}
+                onChange={e => onChange(entry.id, 'frequency', e.target.value)}
+              >
                 <option value="">Select...</option>
-                <option>Once daily (morning)</option>
-                <option>Once daily (evening)</option>
-                <option>Twice daily</option>
-                <option>Three times daily</option>
-                <option>Four times daily</option>
-                <option>As needed (PRN)</option>
-                <option>Weekly</option>
-                <option>Other</option>
+                <option value="Once daily (morning)">Once daily (morning)</option>
+                <option value="Once daily (evening)">Once daily (evening)</option>
+                <option value="Twice daily">Twice daily</option>
+                <option value="Three times daily">Three times daily</option>
+                <option value="Four times daily">Four times daily</option>
+                <option value="As needed (PRN)">As needed (PRN)</option>
+                <option value="Weekly">Weekly</option>
+                <option value="Other">Other</option>
               </select>
+              {(entry.frequency === 'Other' || (entry.frequency && !['Once daily (morning)', 'Once daily (evening)', 'Twice daily', 'Three times daily', 'Four times daily', 'As needed (PRN)', 'Weekly'].includes(entry.frequency))) && (
+                <input
+                  type="text"
+                  required
+                  placeholder="Specify frequency..."
+                  className={`${INPUT} mt-2`}
+                  value={entry.frequency === 'Other' ? '' : entry.frequency}
+                  onChange={e => onChange(entry.id, 'frequency', e.target.value)}
+                />
+              )}
             </div>
             <div>
               <label className={LABEL}>Route *</label>
-              <select className={INPUT} value={entry.route} onChange={set('route')}>
+              <select
+                className={INPUT}
+                value={(!entry.route || ['Oral', 'Sublingual', 'Topical', 'Inhalation', 'Injection'].includes(entry.route)) ? entry.route : 'Other'}
+                onChange={e => onChange(entry.id, 'route', e.target.value)}
+              >
                 <option value="">Select...</option>
-                <option>Oral</option>
-                <option>Sublingual</option>
-                <option>Topical</option>
-                <option>Inhalation</option>
-                <option>Injection</option>
-                <option>Other</option>
+                <option value="Oral">Oral</option>
+                <option value="Sublingual">Sublingual</option>
+                <option value="Topical">Topical</option>
+                <option value="Inhalation">Inhalation</option>
+                <option value="Injection">Injection</option>
+                <option value="Other">Other</option>
               </select>
+              {(entry.route === 'Other' || (entry.route && !['Oral', 'Sublingual', 'Topical', 'Inhalation', 'Injection'].includes(entry.route))) && (
+                <input
+                  type="text"
+                  required
+                  placeholder="Specify route..."
+                  className={`${INPUT} mt-2`}
+                  value={entry.route === 'Other' ? '' : entry.route}
+                  onChange={e => onChange(entry.id, 'route', e.target.value)}
+                />
+              )}
             </div>
           </div>
         </div>
 
-        {/* Prescription Information */}
         <div>
           <p className="text-xs text-gray-400 uppercase tracking-wide mb-3">Prescription Information</p>
           <div className="grid grid-cols-2 gap-3">
@@ -136,39 +163,42 @@ function MedCard({
               <input type="date" className={INPUT} value={entry.prescriptionDate} onChange={set('prescriptionDate')} />
             </div>
             <div>
-              <label className={LABEL}>Prescription Expiry Date</label>
-              <input type="date" className={INPUT} min={entry.prescriptionDate} value={entry.expiryDate} onChange={set('expiryDate')} />
-            </div>
-            <div>
               <label className={LABEL}>Start Date *</label>
               <input type="date" className={INPUT} value={entry.startDate} onChange={set('startDate')} />
             </div>
             <div>
-              <label className={LABEL}>End Date (if applicable)</label>
-              <input type="date" className={INPUT} min={entry.startDate} value={entry.endDate} onChange={set('endDate')} />
+              <label className={LABEL}>Expiry Date</label>
+              <input type="date" className={INPUT} disabled={entry.neverExpires} value={entry.expiryDate} onChange={set('expiryDate')} />
+              <label className="flex items-center gap-1.5 mt-1.5 cursor-pointer">
+                <input type="checkbox" checked={entry.neverExpires} onChange={e => onChange(entry.id, 'neverExpires', e.target.checked as any)} className="rounded text-blue-600 focus:ring-blue-500/20" />
+                <span className="text-[10px] text-gray-500 select-none">No Expiry Date (Ongoing)</span>
+              </label>
             </div>
-            <div className="col-span-2">
-              <label className={LABEL}>Pharmacy</label>
-              <input type="text" className={INPUT} placeholder="e.g. Boots Pharmacy, Bristol" value={entry.pharmacyName} onChange={set('pharmacyName')} />
+            <div>
+              <label className={LABEL}>End Date</label>
+              <input type="date" className={INPUT} disabled={entry.neverExpires} value={entry.endDate} onChange={set('endDate')} />
             </div>
           </div>
         </div>
 
-        {/* Additional */}
         <div>
-          <p className="text-xs text-gray-400 uppercase tracking-wide mb-3">Additional Information</p>
-          <div className="space-y-3">
-            <div>
-              <label className={LABEL}>Known Side Effects</label>
-              <input type="text" className={INPUT} placeholder="e.g. Drowsiness, nausea" value={entry.sideEffects} onChange={set('sideEffects')} />
+          <p className="text-xs text-gray-400 uppercase tracking-wide mb-3">Pharmacy & Notes</p>
+          <div className="grid grid-cols-2 gap-3">
+            <div className="col-span-2">
+              <label className={LABEL}>Dispensing Pharmacy</label>
+              <input type="text" className={INPUT} placeholder="e.g. Boots Pharmacy" value={entry.pharmacyName} onChange={set('pharmacyName')} />
             </div>
-            <div>
+            <div className="col-span-2">
+              <label className={LABEL}>Side Effects / Warnings</label>
+              <textarea rows={2} className={`${INPUT} resize-none`} placeholder="e.g. Drowsiness, take with food" value={entry.sideEffects} onChange={set('sideEffects')} />
+            </div>
+            <div className="col-span-2">
               <label className={LABEL}>Special Instructions</label>
-              <textarea className={INPUT + ' resize-none'} rows={2} placeholder="e.g. Take with food, avoid dairy" value={entry.specialInstructions} onChange={set('specialInstructions')} />
+              <textarea rows={2} className={`${INPUT} resize-none`} placeholder="e.g. Shake well before use" value={entry.specialInstructions} onChange={set('specialInstructions')} />
             </div>
-            <div>
+            <div className="col-span-2">
               <label className={LABEL}>Notes</label>
-              <textarea className={INPUT + ' resize-none'} rows={2} placeholder="Any other relevant information" value={entry.notes} onChange={set('notes')} />
+              <textarea rows={2} className={`${INPUT} resize-none`} placeholder="Additional comments" value={entry.notes} onChange={set('notes')} />
             </div>
           </div>
         </div>
@@ -177,8 +207,9 @@ function MedCard({
   );
 }
 
-export function AddMedicationModal({ isOpen, onClose, userName, onConfirm }: AddMedicationModalProps) {
+export function AddMedicationModal({ isOpen, onClose, userName, serviceUsersList, onConfirm }: AddMedicationModalProps) {
   const [entries, setEntries] = useState<MedEntry[]>([blank()]);
+  const [selectedUserId, setSelectedUserId] = useState<number | ''>('');
 
   const addEntry = () => setEntries(es => [...es, blank()]);
 
@@ -189,15 +220,20 @@ export function AddMedicationModal({ isOpen, onClose, userName, onConfirm }: Add
 
   const handleClose = () => {
     setEntries([blank()]);
+    setSelectedUserId('');
     onClose();
   };
 
   const handleSubmit = (ev: React.FormEvent) => {
     ev.preventDefault();
+    if (!userName && !selectedUserId) {
+      alert("Please select a service user.");
+      return;
+    }
     if (onConfirm) {
-      onConfirm(entries);
+      onConfirm(entries, selectedUserId || undefined);
     } else {
-      console.log('Medications submitted:', entries);
+      console.log('Medications submitted:', entries, selectedUserId);
     }
     handleClose();
   };
@@ -208,28 +244,43 @@ export function AddMedicationModal({ isOpen, onClose, userName, onConfirm }: Add
     <div className="fixed inset-0 bg-gray-900/20 flex items-center justify-center z-50 p-4">
       <div className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl flex flex-col max-h-[92vh] mx-auto">
 
-        {/* Header */}
         <div className="flex items-center gap-3 px-6 py-4 border-b border-gray-100 shrink-0">
           <div className="w-9 h-9 bg-blue-100 rounded-xl flex items-center justify-center shrink-0">
             <Pill size={17} className="text-blue-600" />
           </div>
           <div className="flex-1 min-w-0">
-            <h2 className="text-base text-gray-900">Add Medication</h2>
-            <p className="text-xs text-gray-500 truncate">{userName}</p>
+            <h2 className="text-base text-gray-900 font-semibold">Add Medication</h2>
+            {userName ? (
+              <p className="text-xs text-gray-500 truncate">{userName}</p>
+            ) : serviceUsersList && (
+              <div className="mt-1 flex items-center gap-2">
+                <label className="text-xs text-gray-500 whitespace-nowrap">Service User *</label>
+                <select
+                  required
+                  className="px-2.5 py-1 border border-gray-200 rounded-lg text-xs bg-white focus:outline-none focus:ring-1 focus:ring-blue-500"
+                  value={selectedUserId}
+                  onChange={e => setSelectedUserId(Number(e.target.value))}
+                >
+                  <option value="">Select service user...</option>
+                  {serviceUsersList.map(u => (
+                    <option key={u.id} value={u.id}>{u.name}</option>
+                  ))}
+                </select>
+              </div>
+            )}
           </div>
           <button onClick={handleClose} className="p-1.5 hover:bg-gray-100 rounded-lg transition-colors">
             <X size={18} className="text-gray-400" />
           </button>
         </div>
 
-        {/* Scrollable body */}
         <form onSubmit={handleSubmit} className="flex flex-col flex-1 min-h-0">
           <div className="flex-1 overflow-y-auto px-6 py-5 space-y-4">
 
             {entries.length > 1 && (
               <div className="flex items-center gap-2 text-xs text-blue-700 bg-blue-50 border border-blue-100 rounded-xl px-4 py-2.5">
                 <AlertCircle size={13} className="shrink-0" />
-                Adding {entries.length} medications for {userName}. Each will be saved separately.
+                Adding {entries.length} medications. Each will be saved separately.
               </div>
             )}
 

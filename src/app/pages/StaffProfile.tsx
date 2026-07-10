@@ -904,7 +904,6 @@ export default function StaffProfile({ id, showTimesheet = false }: StaffProfile
                               </div>
                               <div className="flex items-center gap-3 mt-1 text-xs text-gray-400 flex-wrap">
                                 {doc.awardedBy && <span>Awarded: <span className="text-gray-600">{doc.awardedBy}</span></span>}
-                                {doc.reference  && <><span className="text-gray-200">·</span><span>Ref: <span className="font-mono text-gray-500">{doc.reference}</span></span></>}
                                 {doc.expiryDate && doc.expiryDate !== 'N/A' && <><span className="text-gray-200">·</span><span className={doc.status === 'expired' ? 'text-red-500 font-medium' : doc.status === 'expiring' ? 'text-amber-500 font-medium' : ''}>Expires: {doc.expiryDate}</span></>}
                                 {doc.fileName   && <><span className="text-gray-200">·</span><button className="flex items-center gap-1 text-blue-500 hover:text-blue-700 hover:underline underline-offset-2 transition-colors font-normal"><FileText size={11} />{doc.fileName}{doc.fileSize && ` (${doc.fileSize})`}</button></>}
                               </div>
@@ -918,17 +917,15 @@ export default function StaffProfile({ id, showTimesheet = false }: StaffProfile
                             <div className="flex items-center gap-1 shrink-0 mt-0.5">
                               <button className="p-1 text-blue-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors" title="Download"><Download size={12} /></button>
                               <button onClick={() => setSelectedDocForView(doc)} className="p-1 text-blue-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors" title="Edit"><Edit size={12} /></button>
-                              {(doc.status === 'expiring' || doc.status === 'expired') && (
-                                <button
-                                  onClick={() => {
-                                    setSelectedDocForRenew(doc);
-                                    setRenewDocForm({ issuedDate: new Date().toISOString().split('T')[0], expiryDate: new Date(new Date().setFullYear(new Date().getFullYear()+1)).toISOString().split('T')[0], fileName: '', fileSize: '' });
-                                  }}
-                                  className="flex items-center gap-1 px-2.5 py-1.5 text-xs font-semibold text-emerald-700 border border-emerald-200 bg-emerald-50 hover:bg-emerald-100 rounded-lg transition-colors"
-                                >
-                                  <RotateCcw size={12} /> Renew
-                                </button>
-                              )}
+                              <button
+                                onClick={() => {
+                                  setSelectedDocForRenew(doc);
+                                  setRenewDocForm({ issuedDate: new Date().toISOString().split('T')[0], expiryDate: new Date(new Date().setFullYear(new Date().getFullYear()+1)).toISOString().split('T')[0], fileName: '', fileSize: '' });
+                                }}
+                                className="flex items-center gap-1 px-2.5 py-1.5 text-xs font-semibold text-emerald-700 border border-emerald-200 bg-emerald-50 hover:bg-emerald-100 rounded-lg transition-colors"
+                              >
+                                <RotateCcw size={12} /> Renew
+                              </button>
                               <button
                                 onClick={() => setExpandedHistory(prev => ({ ...prev, [doc.id]: !prev[doc.id] }))}
                                 className={`flex items-center gap-1 px-2.5 py-1.5 text-xs font-medium border rounded-lg transition-colors ${
@@ -1167,14 +1164,24 @@ export default function StaffProfile({ id, showTimesheet = false }: StaffProfile
                 <label className="block text-xs text-gray-500 mb-1 font-semibold">Document Type</label>
                 <select
                   className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm outline-none focus:border-blue-400 bg-white"
-                  value={addDocForm.type}
-                  onChange={e => setAddDocForm(f => ({ ...f, type: e.target.value }))}
+                  value={['Qualification', 'Training', 'ID & Right to Work'].includes(addDocForm.type) ? addDocForm.type : 'Other'}
+                  onChange={e => setAddDocForm(f => ({ ...f, type: e.target.value === 'Other' ? '' : e.target.value }))}
                 >
-                  <option>Qualification</option>
-                  <option>Training</option>
-                  <option>ID & Right to Work</option>
-                  <option>Other</option>
+                  <option value="Qualification">Qualification</option>
+                  <option value="Training">Training</option>
+                  <option value="ID & Right to Work">ID & Right to Work</option>
+                  <option value="Other">Other</option>
                 </select>
+                {!['Qualification', 'Training', 'ID & Right to Work'].includes(addDocForm.type) && (
+                  <input
+                    type="text"
+                    required
+                    placeholder="Specify other document type..."
+                    className="w-full mt-2 px-3 py-2 border border-gray-200 rounded-lg text-sm outline-none focus:border-blue-400"
+                    value={addDocForm.type}
+                    onChange={e => setAddDocForm(f => ({ ...f, type: e.target.value }))}
+                  />
+                )}
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div>
